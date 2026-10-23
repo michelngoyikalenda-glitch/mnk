@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10233f" />
+    <title>RoomFlow | Réservation de salles</title>
+    <link rel="icon" type="image/png" href="/assets/brand-logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section id="authScreen" class="auth-screen" aria-labelledby="authTitle">
+      <div class="auth-card">
+        <a class="brand-block auth-brand" href="/" aria-label="RoomFlow">
+          <img class="brand-mark" src="/assets/brand-logo.png" alt="Logo MNK — Michel Ngoyi Kalenda" />
+          <span><span class="eyebrow">Gestion des espaces</span><strong class="brand-name">RoomFlow</strong></span>
+        </a>
+        <p class="eyebrow auth-eyebrow">Espace sécurisé</p>
+        <h1 id="authTitle">Connexion</h1>
+        <p id="authDescription" class="muted">Connectez-vous avec votre compte administrateur.</p>
+        <form id="loginForm" autocomplete="on">
+          <label>Adresse e-mail
+            <input id="loginEmail" name="email" type="email" autocomplete="username" maxlength="254" required />
+          </label>
+          <label>Mot de passe
+            <span class="password-field">
+              <input id="loginPassword" name="password" type="password" autocomplete="current-password" maxlength="128" required />
+              <button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle>
+                <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>
+              </button>
+            </span>
+          </label>
+          <p id="loginError" class="login-error hidden" role="alert"></p>
+          <button id="loginButton" type="submit" class="primary-btn full-width">Se connecter</button>
+        </form>
+        <form id="setupForm" class="hidden" autocomplete="on">
+          <label>Nom complet
+            <input id="setupName" name="name" type="text" autocomplete="name" maxlength="80" required />
+          </label>
+          <label>Adresse e-mail
+            <input id="setupEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
+          </label>
+          <label>Mot de passe administrateur
+            <span class="password-field">
+              <input id="setupPassword" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+              <button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle>
+                <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>
+              </button>
+            </span>
+            <span class="field-hint">12 caractères minimum.</span>
+          </label>
+          <label>Confirmer le mot de passe
+            <span class="password-field">
+              <input id="setupConfirmPassword" name="passwordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+              <button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle>
+                <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>
+              </button>
+            </span>
+          </label>
+          <p id="setupError" class="login-error hidden" role="alert"></p>
+          <button id="setupButton" type="submit" class="primary-btn full-width">Créer mon compte administrateur</button>
+        </form>
+        <p id="authHelp" class="auth-help">Les comptes sont créés par l’administrateur. L’inscription publique est désactivée.</p>
+      </div>
+    </section>
+
+    <div id="appShell" class="app-shell hidden">
+      <aside class="sidebar">
+        <a class="brand-block" href="#dashboard" aria-label="RoomFlow, accueil">
+          <img class="brand-mark" src="/assets/brand-logo.png" alt="Logo MNK — Michel Ngoyi Kalenda" />
+          <span>
+            <span class="eyebrow">Gestion des espaces</span>
+            <strong class="brand-name">RoomFlow</strong>
+          </span>
+        </a>
+
+        <nav class="main-nav" aria-label="Navigation principale">
+          <a class="nav-item active" href="#homeSection">Accueil</a>
+          <a class="nav-item" href="#aboutSection">À propos</a>
+          <a class="nav-item" href="#reservationSection">Réservation salle</a>
+          <a class="nav-item" href="#servicesSection">Nos services</a>
+          <a class="nav-item" href="#roomsSection">Salles</a>
+          <a class="nav-item" href="#calendarSection">Calendrier</a>
+          <a class="nav-item" href="#bookingsSection">Réservations</a>
+          <a class="nav-item" href="#notificationsSection">Notifications <span class="notification-count hidden" id="notificationNavCount">0</span></a>
+          <a class="nav-item" href="#reportsSection">Rapports & journal</a>
+          <a class="nav-item admin-only hidden" href="#usersSection">Utilisateurs</a>
+          <a class="nav-item admin-only hidden" href="#organizationSection">Établissement</a>
+        </nav>
+
+        <div class="sidebar-panel">
+          <span class="panel-label">Rôle du compte</span>
+          <div class="role-pill" id="roleLabel">Utilisateur</div>
+          <small id="roleDescription">Gérez les salles et les demandes de réservation.</small>
+        </div>
+        <p class="sidebar-note">Accès protégé par votre session personnelle.</p>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Espace de réservation</p>
+            <h1>Accueil</h1>
+            <p class="muted" id="todayLabel"></p>
+          </div>
+          <div class="toolbar">
+            <button class="secondary-btn" id="exportCsvBtn" type="button">Exporter en CSV</button>
+            <button class="ghost-btn" id="changePasswordBtn" type="button">Mot de passe</button>
+            <button class="ghost-btn" id="logoutBtn" type="button">Déconnexion</button>
+            <div class="user-chip">
+              <span class="avatar" id="userAvatar">JD</span>
+              <span><strong id="userNameLabel">Jean Dupont</strong><small id="userRoleLabel">Gestionnaire</small></span>
+            </div>
+          </div>
+        </header>
+
+        <div class="notice" role="note">
+          <strong>Connexion sécurisée :</strong> vos droits sont vérifiés par le serveur et les données sont conservées dans la base de l’application.
+        </div>
+
+        <section class="showcase" id="homeSection" aria-label="Accueil — découvrir nos espaces">
+          <div class="showcase-slides">
+            <article class="showcase-slide active" role="group" aria-roledescription="diapositive" aria-label="1 sur 7">
+              <img src="/assets/rooms/banner/slide-1.jpg" alt="Salle de conseil en U, aménagée pour une réunion professionnelle" fetchpriority="high" />
+              <div class="showcase-caption"><p class="showcase-kicker">Des espaces qui vous ressemblent</p><h2>Le bon cadre pour vos grandes idées.</h2><p>Réunions, formations ou événements : trouvez la salle qui donne vie à vos projets.</p><a class="showcase-link" href="#roomsSection">Découvrir les salles <span aria-hidden="true">→</span></a></div>
+            </article>
+            <article class="showcase-slide" role="group" aria-roledescription="diapositive" aria-label="2 sur 7" aria-hidden="true">
+              <img src="/assets/rooms/banner/slide-2.jpg" alt="Salle de réception élégante dressée pour un événement" loading="lazy" />
+              <div class="showcase-caption"><p class="showcase-kicker">Des moments inoubliables</p><h2>Célébrez vos plus belles occasions.</h2><p>Un décor raffiné pour accueillir vos invités et marquer les esprits.</p><a class="showcase-link" href="#roomsSection">Découvrir les salles <span aria-hidden="true">→</span></a></div>
+            </article>
+            <article class="showcase-slide" role="group" aria-roledescription="diapositive" aria-label="3 sur 7" aria-hidden="true">
+              <img src="/assets/rooms/banner/slide-3.jpg" alt="Réception lumineuse sous un chapiteau ouvert sur un jardin" loading="lazy" />
+              <div class="showcase-caption"><p class="showcase-kicker">L’inspiration au grand air</p><h2>Réunissez-vous autrement.</h2><p>Offrez à vos événements un cadre ouvert, lumineux et accueillant.</p><a class="showcase-link" href="#roomsSection">Découvrir les salles <span aria-hidden="true">→</span></a></div>
+            </article>
+            <article class="showcase-slide" role="group" aria-roledescription="diapositive" aria-label="4 sur 7" aria-hidden="true">
+              <img src="/assets/rooms/banner/slide-4.jpg" alt="Salle de réunion contemporaine avec écran de présentation" loading="lazy" />
+              <div class="showcase-caption"><p class="showcase-kicker">Tout pour avancer ensemble</p><h2>Vos idées méritent le bon espace.</h2><p>Des salles équipées pour collaborer, présenter et faire avancer vos projets.</p><a class="showcase-link" href="#roomsSection">Découvrir les salles <span aria-hidden="true">→</span></a></div>
+            </article>
+            <article class="showcase-slide" role="group" aria-roledescription="diapositive" aria-label="5 sur 7" aria-hidden="true">
+              <img src="/assets/rooms/banner/slide-5.jpg" alt="Grande salle de conférence aménagée face à une scène" loading="lazy" />
+              <div class="showcase-caption"><p class="showcase-kicker">Voyez les choses en grand</p><h2>Rassemblez, partagez, inspirez.</h2><p>Le lieu idéal pour vos conférences, présentations et rencontres d’équipe.</p><a class="showcase-link" href="#roomsSection">Découvrir les salles <span aria-hidden="true">→</span></a></div>
+            </article>
+            <article class="showcase-slide" role="group" aria-roledescription="diapositive" aria-label="6 sur 7" aria-hidden="true">
+              <img src="/assets/rooms/banner/slide-6.jpg" alt="Salle de formation informatique accueillant des participants" loading="lazy" />
+              <div class="showcase-caption"><p class="showcase-kicker">Apprendre et progresser</p><h2>Un espace propice à la réussite.</h2><p>Réservez un environnement pensé pour la formation et le partage des savoirs.</p><a class="showcase-link" href="#roomsSection">Découvrir les salles <span aria-hidden="true">→</span></a></div>
+            </article>
+            <article class="showcase-slide" role="group" aria-roledescription="diapositive" aria-label="7 sur 7" aria-hidden="true">
+              <img src="/assets/rooms/banner/slide-7.jpg" alt="Salle de réunion moderne avec tables disposées en carré" loading="lazy" />
+              <div class="showcase-caption"><p class="showcase-kicker">Votre prochaine réservation commence ici</p><h2>Réservez simplement, en quelques clics.</h2><p>Choisissez votre espace et consultez les disponibilités en toute simplicité.</p><a class="showcase-link" href="#reservationSection">Réserver un espace <span aria-hidden="true">→</span></a></div>
+            </article>
+          </div>
+          <div class="showcase-controls">
+            <button class="showcase-control showcase-pause" id="showcasePause" type="button" aria-label="Mettre le diaporama en pause" aria-pressed="false"><span aria-hidden="true">Ⅱ</span></button>
+            <button class="showcase-control" id="showcasePrevious" type="button" aria-label="Photo précédente"><span aria-hidden="true">‹</span></button>
+            <div class="showcase-dots" role="group" aria-label="Choisir une photo">
+              <button class="showcase-dot active" type="button" aria-label="Afficher la photo 1" aria-current="true"></button>
+              <button class="showcase-dot" type="button" aria-label="Afficher la photo 2"></button>
+              <button class="showcase-dot" type="button" aria-label="Afficher la photo 3"></button>
+              <button class="showcase-dot" type="button" aria-label="Afficher la photo 4"></button>
+              <button class="showcase-dot" type="button" aria-label="Afficher la photo 5"></button>
+              <button class="showcase-dot" type="button" aria-label="Afficher la photo 6"></button>
+              <button class="showcase-dot" type="button" aria-label="Afficher la photo 7"></button>
+            </div>
+            <button class="showcase-control" id="showcaseNext" type="button" aria-label="Photo suivante"><span aria-hidden="true">›</span></button>
+          </div>
+          <p class="visually-hidden" id="showcaseAnnouncement" aria-live="polite" aria-atomic="true"></p>
+        </section>
+
+        <section class="panel section-panel intro-panel" id="aboutSection" aria-labelledby="aboutTitle">
+          <div class="panel-header">
+            <div><p class="eyebrow">À propos de RoomFlow</p><h2 id="aboutTitle">Le bon espace pour chaque projet</h2></div>
+          </div>
+          <p>RoomFlow simplifie la recherche et la réservation de salles. Consultez les espaces disponibles, choisissez un créneau et envoyez votre demande depuis un seul endroit.</p>
+          <p class="muted">Que ce soit pour une réunion, une formation ou un événement, les informations sur les salles et les demandes sont réunies dans une interface facile à utiliser.</p>
+          <a class="secondary-btn intro-link" href="#servicesSection">Découvrir nos services <span aria-hidden="true">→</span></a>
+        </section>
+
+        <section class="panel section-panel services-panel" id="servicesSection" aria-labelledby="servicesTitle">
+          <div class="panel-header">
+            <div><p class="eyebrow">Nos services</p><h2 id="servicesTitle">Tout le nécessaire pour organiser votre réservation</h2></div>
+          </div>
+          <div class="service-grid">
+            <article class="service-card">
+              <span class="service-number" aria-hidden="true">01</span>
+              <h3>Des salles adaptées</h3>
+              <p>Parcourez les salles actives et consultez leurs capacités, équipements et emplacements.</p>
+              <a href="#roomsSection">Voir les salles <span aria-hidden="true">→</span></a>
+            </article>
+            <article class="service-card">
+              <span class="service-number" aria-hidden="true">02</span>
+              <h3>Une réservation simple</h3>
+              <p>Envoyez une demande pour une réunion, une formation, un mariage, un anniversaire ou un autre événement.</p>
+              <a href="#reservationSection">Réserver une salle <span aria-hidden="true">→</span></a>
+            </article>
+            <article class="service-card">
+              <span class="service-number" aria-hidden="true">03</span>
+              <h3>Disponibilités et suivi</h3>
+              <p>Consultez le calendrier, retrouvez vos demandes et suivez leur statut et leurs notifications.</p>
+              <a href="#calendarSection">Consulter le calendrier <span aria-hidden="true">→</span></a>
+            </article>
+          </div>
+        </section>
+
+        <section id="dashboard" class="stats-grid" aria-label="Indicateurs"></section>
+
+        <section class="panel section-panel" id="notificationsSection" aria-labelledby="notificationsTitle">
+          <div class="panel-header">
+            <div><p class="eyebrow">Suivi personnel</p><h2 id="notificationsTitle">Notifications</h2></div>
+            <button class="ghost-btn" id="markAllNotificationsReadBtn" type="button">Tout marquer comme lu</button>
+          </div>
+          <div class="notifications-list" id="notificationsList" aria-live="polite"></div>
+          <p class="empty-state hidden" id="notificationsEmpty">Aucune notification pour le moment.</p>
+        </section>
+
+        <section class="content-grid">
+          <section class="panel" id="roomsSection">
+            <div class="panel-header">
+              <div><p class="eyebrow">Ressources</p><h2>Gestion des salles</h2></div>
+            </div>
+            <div class="room-management-card manager-only">
+              <div class="room-management-copy">
+                <span class="room-management-icon" aria-hidden="true">＋</span>
+                <div>
+                  <p class="eyebrow">Votre espace de configuration</p>
+                  <h3>Ajoutez vos salles et leurs informations</h3>
+                  <p>Renseignez les caractéristiques de chaque espace pour le rendre disponible à la réservation.</p>
+                </div>
+              </div>
+              <ol class="room-setup-steps" aria-label="Informations à préparer">
+                <li>Nom et code</li>
+                <li>Type et capacité</li>
+                <li>Équipements et photos</li>
+                <li>Horaires et durée</li>
+              </ol>
+              <button class="primary-btn" id="addRoomBtn" type="button">Commencer : ajouter une salle</button>
+            </div>
+            <p class="room-permission-note" id="roomPermissionNote">
+              L’ajout et la configuration des salles sont réservés aux comptes Gestionnaire et Administrateur. Demandez à l’administrateur de vous attribuer l’un de ces rôles si nécessaire.
+            </p>
+            <div class="toolbar room-toolbar">
+              <label class="search-field">Rechercher une salle
+                <input id="roomSearch" type="search" placeholder="Nom, code, lieu…" />
+              </label>
+              <label>État
+                <select id="roomStatusFilter">
+                  <option value="active">Salles actives</option>
+                  <option value="all">Toutes les salles</option>
+                  <option value="inactive">Salles inactives</option>
+                </select>
+              </label>
+            </div>
+            <div class="rooms-grid" id="roomsGrid"></div>
+          </section>
+
+          <section class="panel form-panel" id="reservationSection">
+            <div class="panel-header">
+              <div><p class="eyebrow">Nouvelle demande</p><h2 id="reservationFormTitle">Réserver une salle</h2></div>
+            </div>
+            <form id="reservationForm">
+              <input id="reservationId" type="hidden" />
+              <label>Salle
+                <select id="roomSelect" required></select>
+              </label>
+              <div class="double-field">
+                <label>Date<input id="reservationDate" type="date" required /></label>
+                <label>Objet<input id="reservationTitle" type="text" maxlength="100" placeholder="Réunion d’équipe" required /></label>
+              </div>
+              <label>Type d’événement
+                <select id="reservationEventType" required>
+                  <option>Réunion</option>
+                  <option>Formation</option>
+                  <option>Conférence</option>
+                  <option>Entretien</option>
+                  <option>Mariage</option>
+                  <option>Veillée mortuaire</option>
+                  <option>Anniversaire</option>
+                  <option>Autre</option>
+                </select>
+              </label>
+              <div class="double-field">
+                <label>Début<input id="startTime" type="time" required /></label>
+                <label>Fin<input id="endTime" type="time" required /></label>
+              </div>
+              <div class="double-field payment-grid">
+                <label>Moyen de paiement
+                  <select id="reservationPaymentMethod">
+                    <option>À payer</option>
+                    <option>M-Pesa</option>
+                    <option>Airtel Money</option>
+                    <option>Orange Money</option>
+                    <option>Paiement bancaire</option>
+                  </select>
+                </label>
+                <label>Statut de paiement
+                  <select id="reservationPaymentStatus">
+                    <option>Non demandé</option>
+                    <option>En attente</option>
+                    <option>Payé</option>
+                    <option>Échoué</option>
+                    <option>Remboursé</option>
+                  </select>
+                </label>
+              </div>
+              <div class="double-field payment-grid">
+                <label>Montant
+                  <input id="reservationAmount" type="number" min="0" step="100" value="0" />
+                </label>
+                <label>Devise
+                  <select id="reservationCurrency">
+                    <option value="CDF">CDF</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </label>
+              </div>
+              <label>Demandeur connecté<input id="reservationOwner" type="text" maxlength="80" readonly /></label>
+              <div class="double-field">
+                <label>Participants<input id="reservationGuests" type="number" min="1" value="2" required /></label>
+                <label>Récurrence
+                  <select id="recurrence">
+                    <option value="none">Aucune</option>
+                    <option value="daily">Chaque jour</option>
+                    <option value="weekly">Chaque semaine</option>
+                    <option value="monthly">Chaque mois</option>
+                  </select>
+                </label>
+              </div>
+              <label id="occurrencesField" class="hidden">Nombre de séances (1 à 12)
+                <input id="occurrences" type="number" min="1" max="12" value="4" />
+              </label>
+              <label>Commentaire <textarea id="reservationComment" rows="2" maxlength="300" placeholder="Informations complémentaires (facultatif)"></textarea></label>
+              <div class="form-actions">
+                <button type="submit" class="primary-btn" id="submitReservationBtn">Envoyer la demande</button>
+                <button type="button" class="ghost-btn hidden" id="cancelEditBtn">Quitter la modification</button>
+              </div>
+            </form>
+          </section>
+        </section>
+
+        <section class="panel section-panel" id="calendarSection">
+          <div class="panel-header calendar-header">
+            <div><p class="eyebrow">Disponibilités</p><h2>Calendrier des salles</h2></div>
+            <div class="calendar-controls">
+              <label>Salle
+                <select id="calendarRoomFilter"><option value="all">Toutes les salles</option></select>
+              </label>
+              <div class="segmented" role="group" aria-label="Mode d’affichage du calendrier">
+                <button type="button" data-view="day">Jour</button>
+                <button type="button" data-view="week">Semaine</button>
+                <button type="button" data-view="month" class="selected">Mois</button>
+              </div>
+              <button class="icon-btn" id="calendarPrev" type="button" aria-label="Période précédente">‹</button>
+              <button class="ghost-btn" id="calendarToday" type="button">Aujourd’hui</button>
+              <button class="icon-btn" id="calendarNext" type="button" aria-label="Période suivante">›</button>
+            </div>
+          </div>
+          <h3 class="calendar-period" id="calendarPeriod"></h3>
+          <div id="calendarGrid" class="calendar-grid"></div>
+          <div class="legend"><span><i class="dot confirmed"></i>Confirmée</span><span><i class="dot pending"></i>En attente</span><span><i class="dot free"></i>Libre</span></div>
+        </section>
+
+        <section class="panel section-panel" id="bookingsSection">
+          <div class="panel-header">
+            <div><p class="eyebrow">Suivi des demandes</p><h2>Réservations</h2></div>
+          </div>
+          <div class="toolbar filters">
+            <label class="search-field">Rechercher
+              <input id="bookingSearch" type="search" placeholder="Objet, salle ou demandeur…" />
+            </label>
+            <label>Statut
+              <select id="bookingStatusFilter">
+                <option value="all">Tous les statuts</option>
+                <option value="en attente">En attente</option>
+                <option value="confirmé">Confirmées</option>
+                <option value="refusé">Refusées</option>
+                <option value="annulé">Annulées</option>
+              </select>
+            </label>
+            <label>Période
+              <select id="bookingPeriodFilter">
+                <option value="upcoming">À venir et aujourd’hui</option>
+                <option value="all">Toutes les dates</option>
+                <option value="past">Passées</option>
+              </select>
+            </label>
+          </div>
+          <div class="table-wrap booking-table-wrap">
+            <table>
+              <thead><tr><th>Salle / date</th><th>Objet</th><th>Demandeur</th><th>Horaire</th><th>Statut</th><th>Actions</th></tr></thead>
+              <tbody id="bookingTable"></tbody>
+            </table>
+            <p class="empty-state hidden" id="bookingEmpty">Aucune réservation ne correspond à ces filtres.</p>
+          </div>
+        </section>
+
+        <section class="panel section-panel" id="reportsSection">
+          <div class="panel-header">
+            <div><p class="eyebrow">Pilotage</p><h2>Rapports & journal d’activité</h2></div>
+          </div>
+          <div class="report-grid">
+            <article class="report-card"><span>Réservations ce mois</span><strong id="monthlyBookings">0</strong></article>
+            <article class="report-card"><span>Heures réservées ce mois</span><strong id="monthlyHours">0 h</strong></article>
+            <article class="report-card"><span>Taux d’occupation estimé</span><strong id="occupancyRate">0 %</strong></article>
+            <article class="report-card"><span>Demandes annulées ou refusées</span><strong id="closedBookings">0</strong></article>
+          </div>
+          <div class="panel-header log-heading"><h3>Actions récentes</h3><span class="muted">Journal conservé côté serveur</span></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Date</th><th>Action</th><th>Détail</th><th>Compte</th></tr></thead><tbody id="auditTable"></tbody></table>
+            <p class="empty-state hidden" id="auditEmpty">Aucune action enregistrée.</p>
+          </div>
+        </section>
+
+        <section class="panel section-panel hidden" id="organizationSection">
+          <div class="panel-header">
+            <div><p class="eyebrow">Configuration des tickets</p><h2>Coordonnées de l’établissement</h2></div>
+          </div>
+          <p class="muted organization-help">Ces coordonnées générales apparaîtront sur les tickets PDF et imprimés de tous les clients. Les salles peuvent aussi avoir leur propre adresse et leurs références.</p>
+          <form id="organizationForm" class="organization-form">
+            <label>Adresse physique de l’établissement
+              <textarea id="organizationAddress" rows="2" maxlength="200" placeholder="Avenue, numéro, commune, ville, pays"></textarea>
+            </label>
+            <label>Références administratives à afficher
+              <textarea id="organizationReferences" rows="3" maxlength="240" placeholder="Ex. : RCCM, numéro d’identification, autres références"></textarea>
+            </label>
+            <button type="submit" class="primary-btn" id="saveOrganizationBtn">Enregistrer les coordonnées</button>
+          </form>
+        </section>
+
+        <section class="panel section-panel hidden" id="usersSection">
+          <div class="panel-header">
+            <div><p class="eyebrow">Administration</p><h2>Comptes utilisateurs</h2></div>
+          </div>
+          <form id="userForm" class="user-form">
+            <label>Nom complet<input id="newUserName" maxlength="80" required /></label>
+            <label>Adresse e-mail<input id="newUserEmail" type="email" maxlength="254" required /></label>
+            <label>Mot de passe initial<span class="password-field">
+              <input id="newUserPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required />
+              <button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle>
+                <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>
+              </button>
+            </span><span class="field-hint">12 caractères minimum.</span></label>
+            <label>Rôle
+              <select id="newUserRole"><option>Utilisateur</option><option>Gestionnaire</option><option>Administrateur</option></select>
+            </label>
+            <button type="submit" class="primary-btn">Créer le compte</button>
+          </form>
+          <p class="auth-help">Communiquez le mot de passe initial à la personne par un canal sûr ; elle pourra ensuite se connecter.</p>
+          <div class="table-wrap">
+            <table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="usersTable"></tbody></table>
+          </div>
+        </section>
+
+        <footer class="footer-note">RoomFlow · Les changements et actions sensibles sont gérés et journalisés par le serveur.</footer>
+      </main>
+    </div>
+
+    <div id="roomModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-backdrop" data-close-modal></div>
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="roomModalTitle">
+        <div class="panel-header"><div><p class="eyebrow">Configuration</p><h2 id="roomModalTitle">Ajouter une salle</h2></div><button type="button" class="icon-btn" id="closeRoomModalBtn" aria-label="Fermer">×</button></div>
+        <form id="roomForm">
+          <input id="roomId" type="hidden" />
+          <div class="double-field">
+            <label>Nom<input id="newRoomName" maxlength="60" required placeholder="Salle Conseil" /></label>
+            <label>Code<input id="newRoomCode" maxlength="20" required placeholder="SAL-01" /></label>
+          </div>
+          <div class="double-field">
+            <label>Type
+              <select id="newRoomType">
+                <option>Réunion</option>
+                <option>Formation</option>
+                <option>Conférence</option>
+                <option>Entretien</option>
+                <option>Mariage</option>
+                <option>Veillée mortuaire</option>
+                <option>Anniversaire</option>
+                <option>Autre</option>
+              </select>
+            </label>
+            <label>Capacité<input id="newRoomCapacity" type="number" min="1" max="500" required value="12" /></label>
+          </div>
+          <label>Équipements<input id="newRoomEquip" maxlength="160" placeholder="Écran, tableau, Wi-Fi" /></label>
+          <label>Bâtiment / étage<input id="newRoomLocation" maxlength="80" placeholder="Bâtiment A · 2e étage" /></label>
+          <label>Adresse physique de la salle<textarea id="newRoomPhysicalAddress" rows="2" maxlength="200" placeholder="Adresse complète ou indication d’accès"></textarea></label>
+          <label>Références de la salle à afficher sur le ticket<textarea id="newRoomReferences" rows="2" maxlength="240" placeholder="Référence interne ou autre information utile"></textarea></label>
+          <fieldset class="room-image-picker">
+            <legend>Photos de la salle</legend>
+            <p class="field-hint">Choisissez des exemples ci-dessous ou ajoutez vos propres photos depuis l’ordinateur. Formats acceptés : JPEG, PNG et WebP, 5 Mo maximum par photo.</p>
+            <div class="room-image-options">
+              <label class="room-image-option">
+                <input type="checkbox" name="roomImageKeys" value="hall-classic" />
+                <img src="/assets/rooms/gallery/hall-classic.jpg" alt="" />
+                <span>Conférence</span>
+              </label>
+              <label class="room-image-option">
+                <input type="checkbox" name="roomImageKeys" value="classroom" />
+                <img src="/assets/rooms/gallery/classroom.jpg" alt="" />
+                <span>Formation</span>
+              </label>
+              <label class="room-image-option">
+                <input type="checkbox" name="roomImageKeys" value="hall-lodge" />
+                <img src="/assets/rooms/gallery/hall-lodge.jpg" alt="" />
+                <span>Événement</span>
+              </label>
+              <label class="room-image-option">
+                <input type="checkbox" name="roomImageKeys" value="auditorium" />
+                <img src="/assets/rooms/gallery/auditorium.jpg" alt="" />
+                <span>Auditorium</span>
+              </label>
+              <label class="room-image-option">
+                <input type="checkbox" name="roomImageKeys" value="boardroom" checked />
+                <img src="/assets/rooms/gallery/boardroom.jpg" alt="" />
+                <span>Moderne</span>
+              </label>
+              <label class="room-image-option">
+                <input type="checkbox" name="roomImageKeys" value="meeting-centara" />
+                <img src="/assets/rooms/gallery/meeting-centara.jpg" alt="" />
+                <span>Réunion</span>
+              </label>
+              <label class="room-image-option">
+                <input type="checkbox" name="roomImageKeys" value="council-room" />
+                <img src="/assets/rooms/gallery/council-room.jpg" alt="" />
+                <span>Conseil</span>
+              </label>
+            </div>
+            <label class="room-computer-upload" for="roomPhotoFiles">
+              <span class="room-upload-icon" aria-hidden="true">↑</span>
+              <span><strong>Ajouter des photos depuis l’ordinateur</strong><small>Vous pouvez sélectionner plusieurs fichiers (7 photos maximum au total).</small></span>
+              <input id="roomPhotoFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+            </label>
+            <div id="roomUploadedPhotos" class="room-uploaded-photos" aria-live="polite"></div>
+          </fieldset>
+          <div class="double-field">
+            <label>Ouverture<input id="newRoomOpen" type="time" value="08:00" required /></label>
+            <label>Fermeture<input id="newRoomClose" type="time" value="20:00" required /></label>
+          </div>
+          <label>Durée maximale (heures)<input id="newRoomMaxDuration" type="number" min="1" max="12" value="4" required /></label>
+          <label class="checkbox-label"><input id="newRoomActive" type="checkbox" checked /> Salle active</label>
+          <button type="submit" class="primary-btn full-width">Enregistrer la salle</button>
+        </form>
+      </section>
+    </div>
+    <div id="passwordModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-backdrop" data-close-password></div>
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
+        <div class="panel-header"><div><p class="eyebrow">Sécurité du compte</p><h2 id="passwordModalTitle">Changer mon mot de passe</h2></div><button type="button" class="icon-btn" id="closePasswordModalBtn" aria-label="Fermer">×</button></div>
+        <form id="passwordForm">
+          <label>Mot de passe actuel<span class="password-field"><input id="currentPassword" type="password" autocomplete="current-password" maxlength="128" required /><button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle><svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg></button></span></label>
+          <label>Nouveau mot de passe<span class="password-field"><input id="newPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required /><button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle><svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg></button></span><span class="field-hint">12 caractères minimum.</span></label>
+          <label>Confirmer le nouveau mot de passe<span class="password-field"><input id="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required /><button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle><svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg></button></span></label>
+          <p id="passwordError" class="login-error hidden" role="alert"></p>
+          <button type="submit" class="primary-btn full-width">Mettre à jour le mot de passe</button>
+        </form>
+      </section>
+    </div>
+    <div id="ticketModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-backdrop" data-close-ticket></div>
+      <section class="modal-card ticket-modal-card" role="dialog" aria-modal="true" aria-labelledby="ticketModalTitle">
+        <div class="panel-header ticket-actions">
+          <div><p class="eyebrow">Justificatif de réservation</p><h2 id="ticketModalTitle">Votre ticket RoomFlow</h2></div>
+          <button type="button" class="icon-btn ticket-close" id="closeTicketBtn" aria-label="Fermer le ticket">×</button>
+        </div>
+        <p class="ticket-instructions ticket-actions">Conservez cette référence pour suivre votre demande. La réservation reste en attente jusqu’à sa validation par un gestionnaire.</p>
+        <div id="ticketContent" class="ticket-list" aria-live="polite"></div>
+        <div class="form-actions ticket-actions">
+          <button type="button" class="primary-btn" id="downloadTicketPdfBtn">Télécharger le ticket PDF</button>
+          <button type="button" class="secondary-btn" id="printTicketBtn">Imprimer</button>
+          <button type="button" class="ghost-btn" id="doneTicketBtn">Fermer</button>
+        </div>
+      </section>
+    </div>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    <script src="script.js"></script>
+  </body>
+</html>

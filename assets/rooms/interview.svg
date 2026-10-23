@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="960" y2="560" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE9D9"/><stop offset="1" stop-color="#F3BE9A"/></linearGradient>
+    <linearGradient id="wall" x1="120" y1="20" x2="830" y2="440" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFCF8"/><stop offset="1" stop-color="#F7EAE0"/></linearGradient>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h960v560H0z"/>
+  <path fill="url(#wall)" d="M0 0h960v405H0z"/>
+  <path fill="#EED9C9" d="M0 405h960v155H0z"/>
+  <path fill="#fff" d="M89 67h252v206H89z"/>
+  <path fill="#D9EBF1" d="M104 82h222v176H104z"/>
+  <path fill="#9CC8CE" d="M104 209c41-37 77-16 109-44 31 27 62 8 113-17v110H104z"/>
+  <path fill="#78A78E" d="M104 228c41-28 70-9 106-26 39 30 77 9 116-11v67H104z"/>
+  <path fill="#fff" d="M207 82h11v176h-11zM104 165h222v10H104z"/>
+  <path fill="#E7D7CA" d="M713 88c0-16 13-29 29-29h115c16 0 29 13 29 29v186H713z"/>
+  <path fill="#B98F72" d="M729 94c0-8 7-15 15-15h111c8 0 15 7 15 15v117H729z"/>
+  <path fill="#DFC8A9" d="M729 211h141v49H729z"/>
+  <path fill="#628D77" d="M759 260h12v113h-12zM828 260h12v113h-12z"/>
+  <path fill="#D7AE87" d="M0 400h960v17H0z"/>
+  <ellipse cx="478" cy="475" fill="#775846" opacity=".14" rx="279" ry="22"/>
+  <path fill="#916D53" d="M283 361h394v37H283z"/>
+  <path fill="#B88D6C" d="M253 382h454l-36 64H289z"/>
+  <path fill="#765740" d="M309 446h15l-9 87h-18zM640 446h15l12 87h-18z"/>
+  <path fill="#486078" d="M260 297c0-31 25-56 56-56s56 25 56 56v68H260z"/>
+  <path fill="#617B91" d="M247 344h138v21H247zM260 364h15v60h-15zM356 364h15v60h-15z"/>
+  <path fill="#E3AE78" d="M288 283c0-15 12-27 27-27s27 12 27 27v26h-54z"/>
+  <path fill="#637E92" d="M586 297c0-31 25-56 56-56s56 25 56 56v68H586z"/>
+  <path fill="#8296A4" d="M573 344h138v21H573zM586 364h15v60h-15zM682 364h15v60h-15z"/>
+  <path fill="#C9885B" d="M614 283c0-15 12-27 27-27s27 12 27 27v26h-54z"/>
+  <path fill="#EDC477" d="M445 327h70v15h-70zM470 303h21v24h-21z"/>
+</svg>

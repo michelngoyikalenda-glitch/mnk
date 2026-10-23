@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="20" x2="900" y2="560" gradientUnits="userSpaceOnUse"><stop stop-color="#DDF5EE"/><stop offset="1" stop-color="#9CD5C7"/></linearGradient>
+    <linearGradient id="screen" x1="175" y1="75" x2="523" y2="285" gradientUnits="userSpaceOnUse"><stop stop-color="#284A69"/><stop offset="1" stop-color="#17334D"/></linearGradient>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h960v560H0z"/>
+  <path fill="#F7FCFA" d="M0 0h960v397H0z"/>
+  <path fill="#E5F0EC" d="M0 397h960v163H0z"/>
+  <rect x="86" y="57" width="414" height="241" rx="12" fill="#D4E2DE"/>
+  <rect x="100" y="70" width="386" height="215" rx="7" fill="url(#screen)"/>
+  <rect x="128" y="98" width="107" height="158" rx="5" fill="#EAF5EF"/>
+  <path fill="#8CC5AB" d="M139 220c24-41 42-58 67-73v98h-67z"/>
+  <circle cx="172" cy="151" r="22" fill="#E6AD70"/>
+  <path fill="#317E6B" d="M255 118h193v13H255zM255 149h153v10H255zM255 176h170v10H255z"/>
+  <path fill="#83CBB6" d="M255 212h138v39H255z"/>
+  <path fill="#B1D7C9" d="M240 298h106v17H240z"/>
+  <path fill="#839E96" d="M285 314h15v68h-15z"/>
+  <path fill="#D4E8E0" d="M618 71h258v179H618z"/>
+  <path fill="#C4E2D8" d="M631 84h232v152H631z"/>
+  <path fill="#85C9B0" d="M631 194c48-39 75-30 113-7 29-42 69-43 119-10v59H631z"/>
+  <path fill="#579B81" d="M631 213c38-18 77-4 103-22 42 22 76 18 129-8v53H631z"/>
+  <path fill="#E1B17B" d="M0 395h960v17H0z"/>
+  <ellipse cx="488" cy="482" fill="#63796F" opacity=".14" rx="351" ry="23"/>
+  <path fill="#936D4D" d="M174 358h612v35H174z"/>
+  <path fill="#B98D65" d="M141 379h678l-42 72H183z"/>
+  <path fill="#806047" d="M209 450h17v86h-17zM738 450h17v86h-17z"/>
+  <path fill="#D9E8E2" d="M222 324h116v51H222z"/>
+  <path fill="#3F7669" d="M231 333h98v33h-98z"/>
+  <path fill="#F2C47F" d="M384 331h45v44h-45zM455 331h45v44h-45zM526 331h45v44h-45zM597 331h45v44h-45z"/>
+  <path fill="#456C60" d="M391 374h31v8h-31zM462 374h31v8h-31zM533 374h31v8h-31zM604 374h31v8h-31z"/>
+</svg>

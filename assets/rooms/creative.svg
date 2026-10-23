@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="70" y1="10" x2="880" y2="560" gradientUnits="userSpaceOnUse"><stop stop-color="#E4F0FF"/><stop offset="1" stop-color="#B9CBEA"/></linearGradient>
+    <linearGradient id="wall" x1="150" y1="0" x2="820" y2="430" gradientUnits="userSpaceOnUse"><stop stop-color="#FAFCFF"/><stop offset="1" stop-color="#E7EDF8"/></linearGradient>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h960v560H0z"/>
+  <path fill="url(#wall)" d="M0 0h960v402H0z"/>
+  <path fill="#DDE5F1" d="M0 402h960v158H0z"/>
+  <path fill="#fff" d="M68 64h314v213H68z"/>
+  <path fill="#E0EAF6" d="M82 78h286v185H82z"/>
+  <path fill="#B5D6EB" d="M82 184c39-45 82-39 117-3 40-38 94-48 169-17v99H82z"/>
+  <path fill="#6BA88D" d="M82 215c39-25 73-11 108-28 45 30 92 8 178-17v93H82z"/>
+  <path fill="#fff" d="M215 78h12v185h-12zM82 164h286v10H82z"/>
+  <path fill="#394B68" d="M604 72h280v205H604z"/>
+  <path fill="#F8FBFF" d="M620 88h248v172H620z"/>
+  <path fill="#EDF3FB" d="M632 101h105v145H632zM750 101h105v145H750z"/>
+  <path fill="#F3C37B" d="m682 135 25 13-13 26-25-13z"/>
+  <circle cx="794" cy="143" r="22" fill="#9EC6B3"/>
+  <path fill="#8AA5D3" d="M772 188h64v8h-64zM646 217h80v8h-80z"/>
+  <path fill="#D7E0EE" d="M0 397h960v18H0z"/>
+  <ellipse cx="487" cy="482" fill="#566783" opacity=".14" rx="335" ry="22"/>
+  <path fill="#9A7354" d="M175 355h611v34H175z"/>
+  <path fill="#C29A73" d="M143 376h675l-46 71H189z"/>
+  <path fill="#75563E" d="M212 447h17l-12 88h-20zM728 447h17l13 88h-20z"/>
+  <path fill="#E9EDF5" d="M214 317h68v53h-68zM299 317h68v53h-68zM384 317h68v53h-68zM469 317h68v53h-68z"/>
+  <path fill="#D7E4F4" d="M224 327h48v34h-48zM309 327h48v34h-48zM394 327h48v34h-48zM479 327h48v34h-48z"/>
+  <path fill="#5A7594" d="M594 289c0-30 24-54 54-54s54 24 54 54v68H594z"/>
+  <path fill="#7C96B3" d="M581 337h136v22H581zM594 358h15v61h-15zM689 358h15v61h-15z"/>
+  <path fill="#E1AC72" d="M621 277c0-15 12-27 27-27s27 12 27 27v24h-54z"/>
+</svg>

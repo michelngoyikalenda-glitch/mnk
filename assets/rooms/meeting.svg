@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="960" y2="560" gradientUnits="userSpaceOnUse"><stop stop-color="#DDEBFF"/><stop offset="1" stop-color="#A8C7F5"/></linearGradient>
+    <linearGradient id="wall" x1="0" y1="30" x2="800" y2="460" gradientUnits="userSpaceOnUse"><stop stop-color="#F9FBFF"/><stop offset="1" stop-color="#E9F0FA"/></linearGradient>
+    <linearGradient id="table" x1="245" y1="353" x2="720" y2="463" gradientUnits="userSpaceOnUse"><stop stop-color="#9B704F"/><stop offset="1" stop-color="#634832"/></linearGradient>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h960v560H0z"/>
+  <path fill="url(#wall)" d="M0 0h960v414H0z"/>
+  <path fill="#E3EAF4" d="M0 414h960v146H0z"/>
+  <path fill="#fff" d="M65 60h271v206H65z"/>
+  <path fill="#CDE6F8" d="M79 74h243v178H79z"/>
+  <path fill="#A8D4E9" d="M79 183c38-44 78-35 116-3 33-35 76-50 127-21v93H79z"/>
+  <path fill="#729D83" d="M79 217c45-26 71-11 98-32 37 30 76 5 127-6v73H79z"/>
+  <path fill="#fff" d="M191 74h11v178h-11zM79 157h243v10H79z"/>
+  <rect x="737" y="69" width="161" height="109" rx="8" fill="#263C5C"/>
+  <rect x="748" y="80" width="139" height="86" rx="4" fill="#7392BF"/>
+  <path stroke="#BFD7FF" stroke-width="8" stroke-linecap="round" d="M773 106h90M773 128h61"/>
+  <path fill="#A9B8CD" d="M784 178h67v13h-67z"/>
+  <path fill="#8192A9" d="M813 190h10v196h-10z"/>
+  <path fill="#E3C9A8" d="M0 410h960v16H0z"/>
+  <ellipse cx="478" cy="469" fill="#65728A" opacity=".15" rx="285" ry="23"/>
+  <path fill="#72543B" d="M294 348h376v41H294z"/>
+  <path fill="url(#table)" d="M243 374h478l-37 86H280z"/>
+  <path fill="#533D2C" d="m300 460 19 2-18 77h-21zM661 460l-19 2 18 77h21z"/>
+  <path fill="#364A63" d="M308 294c0-34 27-61 61-61s61 27 61 61v74H308z"/>
+  <path fill="#526C8A" d="M296 350h146v20H296zM313 365h16v62h-16zM409 365h16v62h-16z"/>
+  <path fill="#364A63" d="M540 294c0-34 27-61 61-61s61 27 61 61v74H540z"/>
+  <path fill="#526C8A" d="M528 350h146v20H528zM545 365h16v62h-16zM641 365h16v62h-16z"/>
+  <circle cx="478" cy="324" r="31" fill="#D7E4F7"/>
+  <path fill="#F0B86A" d="M454 329c0-14 11-25 24-25s24 11 24 25v39h-48z"/>
+  <path fill="#D9944A" d="M446 354h64v13h-64z"/>
+</svg>

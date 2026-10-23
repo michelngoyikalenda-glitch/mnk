@@ -1,0 +1,14 @@
+{
+  "name": "roomflow-reservation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Application de réservation de salles avec authentification serveur",
+  "scripts": {
+    "start": "node server.mjs",
+    "create-admin": "node server.mjs create-admin",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
