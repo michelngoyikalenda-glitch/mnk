@@ -20,7 +20,11 @@
         </a>
         <p class="eyebrow auth-eyebrow">Espace sécurisé</p>
         <h1 id="authTitle">Connexion</h1>
-        <p id="authDescription" class="muted">Connectez-vous avec votre compte administrateur.</p>
+        <p id="authDescription" class="muted">Connectez-vous pour accéder à votre espace de réservation.</p>
+        <div id="authActions" class="auth-actions" role="group" aria-label="Accès au compte">
+          <button id="showLoginButton" type="button" class="secondary-btn" aria-pressed="true" aria-controls="loginForm">Se connecter</button>
+          <button id="showRegisterButton" type="button" class="secondary-btn" aria-pressed="false" aria-controls="setupForm">Créer un compte</button>
+        </div>
         <form id="loginForm" autocomplete="on">
           <label>Adresse e-mail
             <input id="loginEmail" name="email" type="email" autocomplete="username" maxlength="254" required />
@@ -44,19 +48,19 @@
           <label>Adresse e-mail
             <input id="setupEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
           </label>
-          <label>Mot de passe administrateur
+          <label><span id="accountPasswordLabel">Mot de passe administrateur</span>
             <span class="password-field">
-              <input id="setupPassword" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+              <input id="setupPassword" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="12" required />
               <button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle>
                 <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                 <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>
               </button>
             </span>
-            <span class="field-hint">12 caractères minimum.</span>
+            <span class="field-hint">Entre 8 et 12 caractères.</span>
           </label>
           <label>Confirmer le mot de passe
             <span class="password-field">
-              <input id="setupConfirmPassword" name="passwordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+              <input id="setupConfirmPassword" name="passwordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="12" required />
               <button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle>
                 <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                 <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>
@@ -66,7 +70,7 @@
           <p id="setupError" class="login-error hidden" role="alert"></p>
           <button id="setupButton" type="submit" class="primary-btn full-width">Créer mon compte administrateur</button>
         </form>
-        <p id="authHelp" class="auth-help">Les comptes sont créés par l’administrateur. L’inscription publique est désactivée.</p>
+        <p id="authHelp" class="auth-help">Pas encore de compte ? Créez un compte utilisateur pour réserver une salle.</p>
       </div>
     </section>
 
@@ -88,17 +92,12 @@
           <a class="nav-item" href="#roomsSection">Salles</a>
           <a class="nav-item" href="#calendarSection">Calendrier</a>
           <a class="nav-item" href="#bookingsSection">Réservations</a>
-          <a class="nav-item" href="#notificationsSection">Notifications <span class="notification-count hidden" id="notificationNavCount">0</span></a>
-          <a class="nav-item" href="#reportsSection">Rapports & journal</a>
+          <a class="nav-item admin-only hidden" href="#notificationsSection">Notifications <span class="notification-count hidden" id="notificationNavCount">0</span></a>
+          <a class="nav-item admin-only hidden" href="#reportsSection">Rapports & journal</a>
           <a class="nav-item admin-only hidden" href="#usersSection">Utilisateurs</a>
           <a class="nav-item admin-only hidden" href="#organizationSection">Établissement</a>
         </nav>
 
-        <div class="sidebar-panel">
-          <span class="panel-label">Rôle du compte</span>
-          <div class="role-pill" id="roleLabel">Utilisateur</div>
-          <small id="roleDescription">Gérez les salles et les demandes de réservation.</small>
-        </div>
         <p class="sidebar-note">Accès protégé par votre session personnelle.</p>
       </aside>
 
@@ -110,12 +109,14 @@
             <p class="muted" id="todayLabel"></p>
           </div>
           <div class="toolbar">
-            <button class="secondary-btn" id="exportCsvBtn" type="button">Exporter en CSV</button>
             <button class="ghost-btn" id="changePasswordBtn" type="button">Mot de passe</button>
             <button class="ghost-btn" id="logoutBtn" type="button">Déconnexion</button>
             <div class="user-chip">
               <span class="avatar" id="userAvatar">JD</span>
-              <span><strong id="userNameLabel">Jean Dupont</strong><small id="userRoleLabel">Gestionnaire</small></span>
+              <span class="user-details">
+                <strong id="userNameLabel">Jean Dupont</strong>
+                <span class="role-pill" id="roleLabel">Gestionnaire</span>
+              </span>
             </div>
           </div>
         </header>
@@ -201,7 +202,7 @@
             <article class="service-card">
               <span class="service-number" aria-hidden="true">03</span>
               <h3>Disponibilités et suivi</h3>
-              <p>Consultez le calendrier, retrouvez vos demandes et suivez leur statut et leurs notifications.</p>
+              <p>Consultez le calendrier, retrouvez vos demandes et suivez leur statut.</p>
               <a href="#calendarSection">Consulter le calendrier <span aria-hidden="true">→</span></a>
             </article>
           </div>
@@ -209,7 +210,7 @@
 
         <section id="dashboard" class="stats-grid" aria-label="Indicateurs"></section>
 
-        <section class="panel section-panel" id="notificationsSection" aria-labelledby="notificationsTitle">
+        <section class="panel section-panel admin-only hidden" id="notificationsSection" aria-labelledby="notificationsTitle">
           <div class="panel-header">
             <div><p class="eyebrow">Suivi personnel</p><h2 id="notificationsTitle">Notifications</h2></div>
             <button class="ghost-btn" id="markAllNotificationsReadBtn" type="button">Tout marquer comme lu</button>
@@ -263,6 +264,7 @@
               <div><p class="eyebrow">Nouvelle demande</p><h2 id="reservationFormTitle">Réserver une salle</h2></div>
             </div>
             <form id="reservationForm">
+              <p class="muted">Horaires en heure d’Afrique centrale (CAT, UTC+2 — Lubumbashi).</p>
               <input id="reservationId" type="hidden" />
               <label>Salle
                 <select id="roomSelect" required></select>
@@ -278,14 +280,14 @@
                   <option>Conférence</option>
                   <option>Entretien</option>
                   <option>Mariage</option>
-                  <option>Veillée mortuaire</option>
+                  <option>Salle mortuaire</option>
                   <option>Anniversaire</option>
                   <option>Autre</option>
                 </select>
               </label>
               <div class="double-field">
-                <label>Début<input id="startTime" type="time" required /></label>
-                <label>Fin<input id="endTime" type="time" required /></label>
+                <label>Début (24 h)<input id="startTime" type="text" inputmode="text" placeholder="08:00" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" maxlength="5" title="Heure au format 24 heures : HH:MM, par exemple 08:00 ou 14:30." required /></label>
+                <label>Fin (24 h)<input id="endTime" type="text" inputmode="text" placeholder="14:30" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" maxlength="5" title="Heure au format 24 heures : HH:MM, par exemple 08:00 ou 14:30." required /></label>
               </div>
               <div class="double-field payment-grid">
                 <label>Moyen de paiement
@@ -324,12 +326,17 @@
                 <label>Récurrence
                   <select id="recurrence">
                     <option value="none">Aucune</option>
-                    <option value="daily">Chaque jour</option>
+                    <option value="hourly">Toutes les X heures</option>
+                    <option value="daily">Tous les X jours</option>
                     <option value="weekly">Chaque semaine</option>
                     <option value="monthly">Chaque mois</option>
                   </select>
                 </label>
               </div>
+              <label id="recurrenceIntervalField" class="hidden"><span id="recurrenceIntervalLabel">Intervalle en jours</span>
+                <input id="recurrenceInterval" type="number" min="1" step="1" value="1" disabled />
+                <span class="field-hint">L’intervalle sépare les débuts des séances. La durée reste identique ; chaque séance doit respecter les horaires de la salle et se terminer le même jour.</span>
+              </label>
               <label id="occurrencesField" class="hidden">Nombre de séances (1 à 12)
                 <input id="occurrences" type="number" min="1" max="12" value="4" />
               </label>
@@ -344,7 +351,7 @@
 
         <section class="panel section-panel" id="calendarSection">
           <div class="panel-header calendar-header">
-            <div><p class="eyebrow">Disponibilités</p><h2>Calendrier des salles</h2></div>
+            <div><p class="eyebrow">Disponibilités · CAT, UTC+2</p><h2>Calendrier des salles</h2></div>
             <div class="calendar-controls">
               <label>Salle
                 <select id="calendarRoomFilter"><option value="all">Toutes les salles</option></select>
@@ -360,7 +367,7 @@
             </div>
           </div>
           <h3 class="calendar-period" id="calendarPeriod"></h3>
-          <div id="calendarGrid" class="calendar-grid"></div>
+          <div id="calendarGrid" class="calendar-grid" tabindex="0" role="region" aria-label="Calendrier des disponibilités, défilement horizontal sur petit écran"></div>
           <div class="legend"><span><i class="dot confirmed"></i>Confirmée</span><span><i class="dot pending"></i>En attente</span><span><i class="dot free"></i>Libre</span></div>
         </section>
 
@@ -389,7 +396,7 @@
               </select>
             </label>
           </div>
-          <div class="table-wrap booking-table-wrap">
+          <div class="table-wrap booking-table-wrap" tabindex="0" role="region" aria-label="Liste des réservations">
             <table>
               <thead><tr><th>Salle / date</th><th>Objet</th><th>Demandeur</th><th>Horaire</th><th>Statut</th><th>Actions</th></tr></thead>
               <tbody id="bookingTable"></tbody>
@@ -398,9 +405,10 @@
           </div>
         </section>
 
-        <section class="panel section-panel" id="reportsSection">
+        <section class="panel section-panel admin-only hidden" id="reportsSection">
           <div class="panel-header">
             <div><p class="eyebrow">Pilotage</p><h2>Rapports & journal d’activité</h2></div>
+            <button class="secondary-btn admin-only hidden" id="exportCsvBtn" type="button">Exporter en CSV</button>
           </div>
           <div class="report-grid">
             <article class="report-card"><span>Réservations ce mois</span><strong id="monthlyBookings">0</strong></article>
@@ -409,7 +417,7 @@
             <article class="report-card"><span>Demandes annulées ou refusées</span><strong id="closedBookings">0</strong></article>
           </div>
           <div class="panel-header log-heading"><h3>Actions récentes</h3><span class="muted">Journal conservé côté serveur</span></div>
-          <div class="table-wrap">
+          <div class="table-wrap" tabindex="0" role="region" aria-label="Journal d’activité, défilement horizontal sur petit écran">
             <table><thead><tr><th>Date</th><th>Action</th><th>Détail</th><th>Compte</th></tr></thead><tbody id="auditTable"></tbody></table>
             <p class="empty-state hidden" id="auditEmpty">Aucune action enregistrée.</p>
           </div>
@@ -439,24 +447,83 @@
             <label>Nom complet<input id="newUserName" maxlength="80" required /></label>
             <label>Adresse e-mail<input id="newUserEmail" type="email" maxlength="254" required /></label>
             <label>Mot de passe initial<span class="password-field">
-              <input id="newUserPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required />
+              <input id="newUserPassword" type="password" minlength="8" maxlength="12" autocomplete="new-password" required />
               <button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle>
                 <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                 <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>
               </button>
-            </span><span class="field-hint">12 caractères minimum.</span></label>
+            </span><span class="field-hint">Entre 8 et 12 caractères.</span></label>
             <label>Rôle
               <select id="newUserRole"><option>Utilisateur</option><option>Gestionnaire</option><option>Administrateur</option></select>
             </label>
             <button type="submit" class="primary-btn">Créer le compte</button>
           </form>
           <p class="auth-help">Communiquez le mot de passe initial à la personne par un canal sûr ; elle pourra ensuite se connecter.</p>
-          <div class="table-wrap">
+          <div class="table-wrap" tabindex="0" role="region" aria-label="Comptes utilisateurs, défilement horizontal sur petit écran">
             <table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="usersTable"></tbody></table>
           </div>
         </section>
 
-        <footer class="footer-note">RoomFlow · Les changements et actions sensibles sont gérés et journalisés par le serveur.</footer>
+        <footer class="site-footer" aria-labelledby="footerTitle">
+          <div class="footer-grid">
+            <div class="footer-about">
+              <a class="footer-brand" href="#homeSection" aria-label="RoomFlow, retour à l’accueil">
+                <img src="/assets/brand-logo.png" alt="Logo MNK" width="88" height="59" loading="lazy" />
+                <strong>RoomFlow</strong>
+              </a>
+              <h2 id="footerTitle">Un espace pour chaque occasion.</h2>
+              <p>Trouvez votre salle, choisissez votre créneau et organisez votre prochain événement en toute simplicité.</p>
+            </div>
+            <nav class="footer-links" aria-label="Liens utiles">
+              <h3>Liens utiles</h3>
+              <a href="#aboutSection">À propos</a>
+              <a href="#servicesSection">Nos services</a>
+              <a href="#roomsSection">Découvrir les salles</a>
+              <a href="#reservationSection">Réserver une salle</a>
+            </nav>
+            <div class="footer-contact">
+              <h3>Parlons de votre réservation</h3>
+              <p>Une question sur nos salles ou votre demande ? Contactez-nous directement.</p>
+              <a class="footer-contact-button whatsapp-contact" href="https://wa.me/243851699229" target="_blank" rel="noopener noreferrer" aria-label="Nous contacter sur WhatsApp au +243 851 699 229 (nouvel onglet)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.4-4.8a8.5 8.5 0 1 1 16.1-4.1Z"/><path d="m8.3 7.4 1.5 2.4-1 1.2a8 8 0 0 0 4.1 4.1l1.2-1 2.4 1.5c-.3 1.3-1.2 1.9-2.5 1.6-3.8-.9-6.8-3.9-7.7-7.7-.3-1.3.3-2.2 2-2.1Z"/></svg>
+                <span>WhatsApp <small>+243 851 699 229</small></span>
+              </a>
+              <a class="footer-contact-button phone-contact" href="tel:+243851699229" aria-label="Appeler le +243 851 699 229">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 3 3 5-2 2a14 14 0 0 0 6 6l2-2 5 3c0 3-2 4-4 4C9 20 4 15 3 7c0-2 1-4 4-4Z"/></svg>
+                <span>Appelez-nous <small>+243 851 699 229</small></span>
+              </a>
+              <a class="footer-contact-button email-contact" href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=michelngoyikalenda%40gmail.com" target="_blank" rel="noopener noreferrer" aria-label="Écrire à michelngoyikalenda@gmail.com dans Gmail (nouvel onglet)">
+                <img src="/assets/rooms/gallery/Download%20google%20mail%20gmail%20icon%20logo%20symbol.jpg" alt="" width="28" height="28" loading="lazy" />
+                <span>E-mail <small>michelngoyikalenda@gmail.com</small></span>
+              </a>
+            </div>
+          </div>
+          <nav class="footer-social" aria-labelledby="footerSocialTitle">
+            <h3 id="footerSocialTitle">Retrouvez-nous sur les réseaux</h3>
+            <div class="footer-social-links">
+              <a href="https://www.tiktok.com/@michelngoyikalend" target="_blank" rel="noopener noreferrer" aria-label="TikTok de Michel Ngoyi Kalenda (nouvel onglet)">
+                <img src="/assets/rooms/gallery/TikTok.jpg" alt="" width="32" height="32" loading="lazy" />
+                <span>TikTok</span>
+              </a>
+              <a href="https://x.com/kalenda1497" target="_blank" rel="noopener noreferrer" aria-label="X de Michel Ngoyi Kalenda (nouvel onglet)">
+                <img src="/assets/rooms/gallery/x%20icon.jpg" alt="" width="32" height="32" loading="lazy" />
+                <span>X (Twitter)</span>
+              </a>
+              <a href="https://www.linkedin.com/in/michel-ngoyi-296ba4241" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn de Michel Ngoyi Kalenda (nouvel onglet)">
+                <img src="/assets/rooms/gallery/Square%20linkedin%20logo%20isolated%20on%20white%20background%20_%20Premium%20Vector.jpg" alt="" width="32" height="32" loading="lazy" />
+                <span>LinkedIn</span>
+              </a>
+              <a href="https://www.facebook.com/michel.ngoyikalenda" target="_blank" rel="noopener noreferrer" aria-label="Facebook de Michel Ngoyi Kalenda (nouvel onglet)">
+                <img src="/assets/rooms/gallery/Facebook%20logo.jpg" alt="" width="32" height="32" loading="lazy" />
+                <span>Facebook</span>
+              </a>
+            </div>
+          </nav>
+          <div class="footer-bottom">
+            <p>Tout droit reserver © 2026. RoomFlow By Michel Ngoyi</p>
+            <a href="#homeSection">Retour en haut ↑</a>
+          </div>
+        </footer>
       </main>
     </div>
 
@@ -478,7 +545,7 @@
                 <option>Conférence</option>
                 <option>Entretien</option>
                 <option>Mariage</option>
-                <option>Veillée mortuaire</option>
+                <option>Salle mortuaire</option>
                 <option>Anniversaire</option>
                 <option>Autre</option>
               </select>
@@ -537,8 +604,8 @@
             <div id="roomUploadedPhotos" class="room-uploaded-photos" aria-live="polite"></div>
           </fieldset>
           <div class="double-field">
-            <label>Ouverture<input id="newRoomOpen" type="time" value="08:00" required /></label>
-            <label>Fermeture<input id="newRoomClose" type="time" value="20:00" required /></label>
+            <label>Ouverture (24 h)<input id="newRoomOpen" type="text" inputmode="text" value="08:00" placeholder="08:00" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" maxlength="5" title="Heure au format 24 heures : HH:MM, par exemple 08:00 ou 14:30." required /></label>
+            <label>Fermeture (24 h)<input id="newRoomClose" type="text" inputmode="text" value="20:00" placeholder="20:00" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" maxlength="5" title="Heure au format 24 heures : HH:MM, par exemple 08:00 ou 14:30." required /></label>
           </div>
           <label>Durée maximale (heures)<input id="newRoomMaxDuration" type="number" min="1" max="12" value="4" required /></label>
           <label class="checkbox-label"><input id="newRoomActive" type="checkbox" checked /> Salle active</label>
@@ -546,14 +613,29 @@
         </form>
       </section>
     </div>
+    <dialog id="roomDetailsDialog" class="room-details-dialog" aria-labelledby="roomDetailsTitle">
+      <div class="panel-header">
+        <div><p class="eyebrow">Découvrir la salle</p><h2 id="roomDetailsTitle"></h2></div>
+        <button type="button" class="icon-btn" id="closeRoomDetailsBtn" aria-label="Fermer les détails de la salle" autofocus>×</button>
+      </div>
+      <img id="roomDetailsImage" class="room-details-image" alt="" />
+      <p id="roomDetailsImageError" class="login-error hidden" role="alert">Cette photo n’a pas pu être chargée. Vérifiez votre connexion ou choisissez une autre photo.</p>
+      <div class="room-details-navigation">
+        <button type="button" class="secondary-btn" id="roomDetailsPrevious" aria-label="Photo précédente">‹ Précédente</button>
+        <span id="roomDetailsCount" role="status"></span>
+        <button type="button" class="secondary-btn" id="roomDetailsNext" aria-label="Photo suivante">Suivante ›</button>
+      </div>
+      <dl id="roomDetailsInfo" class="room-details-info"></dl>
+      <button type="button" class="primary-btn full-width" id="roomDetailsReserve">Réserver cette salle</button>
+    </dialog>
     <div id="passwordModal" class="modal hidden" aria-hidden="true">
       <div class="modal-backdrop" data-close-password></div>
       <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
         <div class="panel-header"><div><p class="eyebrow">Sécurité du compte</p><h2 id="passwordModalTitle">Changer mon mot de passe</h2></div><button type="button" class="icon-btn" id="closePasswordModalBtn" aria-label="Fermer">×</button></div>
         <form id="passwordForm">
           <label>Mot de passe actuel<span class="password-field"><input id="currentPassword" type="password" autocomplete="current-password" maxlength="128" required /><button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle><svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg></button></span></label>
-          <label>Nouveau mot de passe<span class="password-field"><input id="newPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required /><button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle><svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg></button></span><span class="field-hint">12 caractères minimum.</span></label>
-          <label>Confirmer le nouveau mot de passe<span class="password-field"><input id="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required /><button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle><svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg></button></span></label>
+          <label>Nouveau mot de passe<span class="password-field"><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="12" required /><button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle><svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg></button></span><span class="field-hint">Entre 8 et 12 caractères.</span></label>
+          <label>Confirmer le nouveau mot de passe<span class="password-field"><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="12" required /><button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" data-password-toggle><svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.3C3.5 8.1 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg></button></span></label>
           <p id="passwordError" class="login-error hidden" role="alert"></p>
           <button type="submit" class="primary-btn full-width">Mettre à jour le mot de passe</button>
         </form>
@@ -576,6 +658,6 @@
       </section>
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
   </body>
 </html>

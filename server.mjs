@@ -7,6 +7,7 @@ import { createHash, randomBytes, randomUUID, scrypt as scryptCallback, timingSa
 import { promisify } from "node:util";
 import { DatabaseSync } from "node:sqlite";
 import { createInterface } from "node:readline";
+import { dateToISO } from "./datetime.mjs";
 
 const scrypt = promisify(scryptCallback);
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)));
@@ -17,7 +18,8 @@ const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 const MAX_BODY_BYTES = 32 * 1024;
 const MAX_ROOM_IMAGE_BYTES = 5 * 1024 * 1024;
 const HASH_LENGTH = 64;
-const PASSWORD_MIN_LENGTH = 12;
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 12;
 const ROLES = new Set(["Administrateur", "Gestionnaire", "Utilisateur"]);
 const PAYMENT_METHODS = new Set([
   "À payer",
@@ -39,7 +41,7 @@ const EVENT_TYPES = new Set([
   "Conférence",
   "Entretien",
   "Mariage",
-  "Veillée mortuaire",
+  "Salle mortuaire",
   "Anniversaire",
   "Autre",
 ]);
@@ -65,7 +67,13 @@ const PUBLIC_FILES = new Set([
   "index.html",
   "styles.css",
   "script.js",
+  "datetime.mjs",
   "assets/brand-logo.png",
+  "assets/rooms/gallery/Download google mail gmail icon logo symbol.jpg",
+  "assets/rooms/gallery/TikTok.jpg",
+  "assets/rooms/gallery/x icon.jpg",
+  "assets/rooms/gallery/Square linkedin logo isolated on white background _ Premium Vector.jpg",
+  "assets/rooms/gallery/Facebook logo.jpg",
   ...BANNER_IMAGES,
   ...LEGACY_ROOM_IMAGE_KEYS.map((key) => `assets/rooms/${key}.svg`),
   ...ROOM_GALLERY_IMAGES.map((key) => `assets/rooms/gallery/${key}.jpg`),
@@ -75,6 +83,7 @@ const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".jpg": "image/jpeg",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".svg": "image/svg+xml",
@@ -190,6 +199,8 @@ if (!reservationColumns.some((column) => column.name === "currency")) {
 }
 
 const roomColumns = database.prepare("PRAGMA table_info(rooms)").all();
+database.prepare("UPDATE rooms SET type=? WHERE type=?").run("Salle mortuaire", "Veillée mortuaire");
+database.prepare("UPDATE reservations SET event_type=? WHERE event_type=?").run("Salle mortuaire", "Veillée mortuaire");
 if (!roomColumns.some((column) => column.name === "image_key")) {
   database.exec("ALTER TABLE rooms ADD COLUMN image_key TEXT NOT NULL DEFAULT 'meeting'");
 }
@@ -464,7 +475,7 @@ function validateRoomInput(input) {
       throw new HttpError(400, `Choisissez entre 1 et ${ROOM_GALLERY_IMAGES.length} photos valides pour la galerie.`);
     }
   }
-  if (!/^\d{2}:\d{2}$/.test(open) || !/^\d{2}:\d{2}$/.test(close) || open >= close) {
+  if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(open) || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(close) || open >= close) {
     throw new HttpError(400, "La plage horaire de la salle est invalide.");
   }
   if (!Number.isInteger(capacity) || capacity < 1 || capacity > 500) throw new HttpError(400, "La capacité doit être comprise entre 1 et 500.");
@@ -495,7 +506,7 @@ function mapOrganizationSettings(row) {
 }
 
 function mapReservation(row) {
-  const createdYear = new Date(row.created_at).getFullYear();
+  const createdYear = dateToISO(new Date(row.created_at)).slice(0, 4);
   return {
     id: row.id, roomId: row.room_id, ownerId: row.user_id, owner: row.owner_name,
     title: row.title, eventType: row.event_type || "Réunion", date: row.booking_date, start: row.start_time, end: row.end_time,
@@ -529,7 +540,7 @@ function roomIsBooked(roomId) {
     SELECT 1 AS booked FROM reservations
     WHERE room_id = ? AND status IN ('en attente', 'confirmé') AND booking_date >= ?
     LIMIT 1
-  `).get(roomId, new Date().toISOString().slice(0, 10)));
+  `).get(roomId, dateToISO()));
 }
 
 function validateReservationInput(input, user, exceptId = null) {
@@ -551,7 +562,7 @@ function validateReservationInput(input, user, exceptId = null) {
   const amount = Number(input.amount ?? 0);
   const currency = cleanString(input.currency === undefined ? "CDF" : input.currency, "La devise", 8);
   if (!Number.isFinite(amount) || amount < 0) throw new HttpError(400, "Le montant du paiement est invalide.");
-  if (!validDate(date) || date < new Date().toISOString().slice(0, 10)) throw new HttpError(400, "La date doit être aujourd’hui ou ultérieure.");
+  if (!validDate(date) || date < dateToISO()) throw new HttpError(400, "La date doit être aujourd’hui ou ultérieure.");
   if (typeof start !== "string" || typeof end !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(start) || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(end) || start >= end) {
     throw new HttpError(400, "La plage horaire est invalide.");
   }
@@ -701,11 +712,19 @@ async function handleApi(request, response, url) {
     return;
   }
 
-  if (pathname === "/api/auth/setup" && method === "POST") {
+  if (["/api/auth/setup", "/api/auth/register"].includes(pathname) && method === "POST") {
+    const initialSetup = pathname === "/api/auth/setup";
     const input = await readJson(request);
     checkOrigin(request);
-    const name = cleanString(input.name, "Le nom", 80);
     const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
+    if (!initialSetup) {
+      checkLoginRateLimit(request, `register:${email}`);
+      recordLoginAttempt(request, `register:${email}`, false);
+      if (!database.prepare("SELECT 1 FROM users LIMIT 1").get()) {
+        throw new HttpError(409, "L’administrateur doit d’abord initialiser l’application.");
+      }
+    }
+    const name = cleanString(input.name, "Le nom", 80);
     const password = input.password;
     validateEmailAndPassword(email, password);
     const salt = randomBytes(16);
@@ -713,22 +732,23 @@ async function handleApi(request, response, url) {
     let user;
     try {
       user = transaction(() => {
-        if (database.prepare("SELECT 1 FROM users LIMIT 1").get()) {
+        if (initialSetup && database.prepare("SELECT 1 FROM users LIMIT 1").get()) {
           throw new HttpError(409, "Le compte administrateur initial a déjà été créé. Connectez-vous ou contactez l’administrateur.");
         }
+        const role = initialSetup ? "Administrateur" : "Utilisateur";
         const userId = Number(database.prepare(`
           INSERT INTO users (name, email, role, salt, password_hash, active, created_at)
-          VALUES (?, ?, 'Administrateur', ?, ?, 1, ?)
-        `).run(name, email, salt.toString("base64"), Buffer.from(passwordHash).toString("base64"), nowIso()).lastInsertRowid);
-        return { id: userId, name, email, role: "Administrateur" };
+          VALUES (?, ?, ?, ?, ?, 1, ?)
+        `).run(name, email, role, salt.toString("base64"), Buffer.from(passwordHash).toString("base64"), nowIso()).lastInsertRowid);
+        return { id: userId, name, email, role };
       });
     } catch (error) {
       if (error instanceof HttpError) throw error;
-      if (String(error.message).includes("UNIQUE")) throw new HttpError(409, "Un compte existe déjà ; contactez l’administrateur.");
+      if (String(error.message).includes("UNIQUE")) throw new HttpError(409, "Cette adresse e-mail est déjà utilisée. Connectez-vous ou contactez l’administrateur.");
       throw error;
     }
     const session = createSession(response, user);
-    audit(user, "Configuration initiale", "Premier compte administrateur créé");
+    audit(user, initialSetup ? "Configuration initiale" : "Inscription", initialSetup ? "Premier compte administrateur créé" : "Compte Utilisateur créé");
     sendJson(response, 201, session);
     return;
   }
@@ -748,7 +768,7 @@ async function handleApi(request, response, url) {
     const candidate = Buffer.from(await scrypt(password, salt, HASH_LENGTH, { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }));
     const valid = candidate.length === expected.length && timingSafeEqual(candidate, expected) && Boolean(account?.active);
     recordLoginAttempt(request, email, valid);
-    if (!valid) throw new HttpError(401, "Adresse e-mail ou mot de passe incorrect.");
+    if (!valid) throw new HttpError(401, `Adresse e-mail ou mot de passe incorrect. Le mot de passe doit contenir entre ${PASSWORD_MIN_LENGTH} et ${PASSWORD_MAX_LENGTH} caractères.`);
     const user = { id: account.id, name: account.name, email: account.email, role: account.role };
     const session = createSession(response, user);
     audit(user, "Connexion", "Session ouverte");
@@ -838,14 +858,15 @@ async function handleApi(request, response, url) {
     const organization = mapOrganizationSettings(database.prepare("SELECT * FROM organization_settings WHERE id=1").get());
     const reservations = database.prepare("SELECT * FROM reservations ORDER BY booking_date, start_time").all()
       .map((reservation) => mapReservationForUser(reservation, auth.user));
-    const notifications = database.prepare(`
+    const isAdmin = auth.user.role === "Administrateur";
+    const notifications = isAdmin ? database.prepare(`
       SELECT id, title, message, created_at AS createdAt, read_at AS readAt
       FROM notifications WHERE user_id=? ORDER BY id DESC LIMIT 50
-    `).all(auth.user.id);
-    const unreadNotificationCount = database.prepare(
+    `).all(auth.user.id) : [];
+    const unreadNotificationCount = isAdmin ? database.prepare(
       "SELECT COUNT(*) AS count FROM notifications WHERE user_id=? AND read_at IS NULL",
-    ).get(auth.user.id).count;
-    const logs = auth.user.role === "Administrateur" || auth.user.role === "Gestionnaire"
+    ).get(auth.user.id).count : 0;
+    const logs = isAdmin
       ? database.prepare("SELECT * FROM audit_log ORDER BY id DESC LIMIT 100").all().map((entry) => ({
         id: entry.id, at: entry.created_at, action: entry.action, detail: entry.detail, role: entry.actor_role, actor: entry.actor_name,
       }))
@@ -855,12 +876,14 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === "/api/notifications/read-all" && method === "POST") {
+    requireRole(auth.user, "Administrateur");
     database.prepare("UPDATE notifications SET read_at=? WHERE user_id=? AND read_at IS NULL").run(nowIso(), auth.user.id);
     sendJson(response, 200, { ok: true });
     return;
   }
   const notificationMatch = pathname.match(/^\/api\/notifications\/(\d+)\/read$/);
   if (notificationMatch && method === "POST") {
+    requireRole(auth.user, "Administrateur");
     const result = database.prepare(`
       UPDATE notifications SET read_at=? WHERE id=? AND user_id=? AND read_at IS NULL
     `).run(nowIso(), Number(notificationMatch[1]), auth.user.id);
@@ -946,31 +969,50 @@ async function handleApi(request, response, url) {
     const input = requestBody;
     const recurrence = input.recurrence || "none";
     const count = recurrence === "none" ? 1 : Number(input.occurrences);
-    if (!["none", "daily", "weekly", "monthly"].includes(recurrence) || !Number.isInteger(count) || count < 1 || count > 12) {
+    if (!["none", "hourly", "daily", "weekly", "monthly"].includes(recurrence) || !Number.isInteger(count) || count < 1 || count > 12) {
       throw new HttpError(400, "La règle de récurrence est invalide (1 à 12 séances).");
     }
+    const interval = ["hourly", "daily"].includes(recurrence) ? Number(input.recurrenceInterval ?? 1) : 1;
+    if (!Number.isSafeInteger(interval) || interval < 1) {
+      throw new HttpError(400, "L’intervalle de récurrence doit être un nombre entier positif.");
+    }
+    validateReservationInput(input, auth.user);
     const requestedDate = input.date;
-    const [year, month, day] = typeof requestedDate === "string" ? requestedDate.split("-").map(Number) : [];
-    const bookingDates = Array.from({ length: count }, (_, index) => {
-      if (!validDate(requestedDate)) return requestedDate;
-      if (recurrence === "daily") return new Date(Date.UTC(year, month - 1, day + index)).toISOString().slice(0, 10);
-      if (recurrence === "weekly") return new Date(Date.UTC(year, month - 1, day + index * 7)).toISOString().slice(0, 10);
+    const [year, month, day] = requestedDate.split("-").map(Number);
+    const shiftedDate = (timestamp) => {
+      const value = new Date(timestamp);
+      if (!Number.isFinite(value.getTime()) || !validDate(value.toISOString().slice(0, 10))) {
+        throw new HttpError(400, "L’intervalle produit une date de réservation invalide.");
+      }
+      return value;
+    };
+    const occurrences = Array.from({ length: count }, (_, index) => {
+      if (recurrence === "hourly") {
+        const start = shiftedDate(Date.parse(`${requestedDate}T${input.start}:00Z`) + index * interval * 3600000);
+        const end = shiftedDate(Date.parse(`${requestedDate}T${input.end}:00Z`) + index * interval * 3600000);
+        if (start.toISOString().slice(0, 10) !== end.toISOString().slice(0, 10)) {
+          throw new HttpError(400, "Chaque séance doit se terminer le même jour que son début.");
+        }
+        return { date: start.toISOString().slice(0, 10), start: start.toISOString().slice(11, 16), end: end.toISOString().slice(11, 16) };
+      }
+      if (recurrence === "daily") return { date: shiftedDate(Date.UTC(year, month - 1, day + index * interval)).toISOString().slice(0, 10) };
+      if (recurrence === "weekly") return { date: new Date(Date.UTC(year, month - 1, day + index * 7)).toISOString().slice(0, 10) };
       if (recurrence === "monthly") {
         const targetMonth = month - 1 + index;
         const targetYear = year + Math.floor(targetMonth / 12);
         const normalizedMonth = ((targetMonth % 12) + 12) % 12;
         const lastDay = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate();
-        return new Date(Date.UTC(targetYear, normalizedMonth, Math.min(day, lastDay))).toISOString().slice(0, 10);
+        return { date: new Date(Date.UTC(targetYear, normalizedMonth, Math.min(day, lastDay))).toISOString().slice(0, 10) };
       }
-      return requestedDate;
+      return input;
     });
     const created = transaction(() => {
-      const items = bookingDates.map((date) => validateReservationInput({ ...input, date }, auth.user));
       const insert = database.prepare(`
         INSERT INTO reservations (room_id, user_id, owner_name, title, event_type, booking_date, start_time, end_time, guests, comment, status, payment_method, payment_status, amount, currency, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'en attente', ?, ?, ?, ?, ?, ?)
       `);
-      const reservations = items.map((item) => {
+      const reservations = occurrences.map((occurrence) => {
+        const item = validateReservationInput({ ...input, ...occurrence }, auth.user);
         const now = nowIso();
         const id = Number(insert.run(
           item.roomId,
@@ -1012,7 +1054,7 @@ async function handleApi(request, response, url) {
     const booking = database.prepare("SELECT * FROM reservations WHERE id = ?").get(Number(reservationMatch[1]));
     if (!booking) throw new HttpError(404, "Réservation introuvable.");
     if (booking.user_id !== auth.user.id && !["Administrateur", "Gestionnaire"].includes(auth.user.role)) throw new HttpError(403, "Vous ne pouvez modifier que vos propres réservations.");
-    if (booking.booking_date < new Date().toISOString().slice(0, 10) || !["confirmé", "en attente"].includes(booking.status)) {
+    if (booking.booking_date < dateToISO() || !["confirmé", "en attente"].includes(booking.status)) {
       throw new HttpError(409, "Cette réservation est clôturée et ne peut plus être modifiée.");
     }
     const input = requestBody;
@@ -1053,7 +1095,7 @@ async function handleApi(request, response, url) {
     const booking = database.prepare("SELECT * FROM reservations WHERE id = ?").get(Number(reservationMatch[1]));
     if (!booking) throw new HttpError(404, "Réservation introuvable.");
     if (booking.user_id !== auth.user.id && !["Administrateur", "Gestionnaire"].includes(auth.user.role)) throw new HttpError(403, "Vous ne pouvez annuler que vos propres réservations.");
-    if (booking.booking_date < new Date().toISOString().slice(0, 10) || !["confirmé", "en attente"].includes(booking.status)) {
+    if (booking.booking_date < dateToISO() || !["confirmé", "en attente"].includes(booking.status)) {
       throw new HttpError(409, "Cette réservation ne peut plus être annulée.");
     }
     const input = requestBody;
@@ -1127,8 +1169,8 @@ function validateEmailAndPassword(email, password) {
   if (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
     throw new HttpError(400, "Adresse e-mail invalide.");
   }
-  if (typeof password !== "string" || password.length < PASSWORD_MIN_LENGTH || password.length > 128) {
-    throw new HttpError(400, `Le mot de passe doit contenir entre ${PASSWORD_MIN_LENGTH} et 128 caractères.`);
+  if (typeof password !== "string" || password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
+    throw new HttpError(400, `Le mot de passe doit contenir entre ${PASSWORD_MIN_LENGTH} et ${PASSWORD_MAX_LENGTH} caractères.`);
   }
 }
 
@@ -1206,7 +1248,7 @@ async function createAdminCli() {
   }
   validateEmailAndPassword(email, "x".repeat(PASSWORD_MIN_LENGTH));
   if (!name || name.length > 80) throw new Error("Le nom doit contenir entre 1 et 80 caractères.");
-  const password = await promptHidden("Mot de passe (12 caractères minimum, saisie masquée) : ");
+  const password = await promptHidden(`Mot de passe (entre ${PASSWORD_MIN_LENGTH} et ${PASSWORD_MAX_LENGTH} caractères, saisie masquée) : `);
   const confirmation = await promptHidden("Confirmez le mot de passe : ");
   if (password !== confirmation) throw new Error("Les mots de passe ne correspondent pas.");
   validateEmailAndPassword(email, password);

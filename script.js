@@ -1,10 +1,7 @@
 "use strict";
 
-const ROLE_DESCRIPTIONS = {
-  Gestionnaire: "Gérez les salles et les demandes de réservation.",
-  Administrateur: "Consultez le tableau de bord et gérez la configuration.",
-  Utilisateur: "Consultez les disponibilités et gérez vos propres demandes.",
-};
+import { dateToISO, formatDate, formatDateTime, shiftDate } from "./datetime.mjs";
+
 const ACTIVE_STATUSES = new Set(["confirmé", "en attente"]);
 const ROOM_GALLERY_IMAGES = [
   { key: "hall-classic", label: "Salle de conférence" },
@@ -19,6 +16,9 @@ const dateInput = document.getElementById("reservationDate");
 const toast = document.getElementById("toast");
 let toastTimeout;
 let csrfToken = "";
+let authMode = "login";
+let roomDetailsId = null;
+let roomDetailsImageIndex = 0;
 let users = [];
 let roomPhotoItems = [];
 let roomFormSaving = false;
@@ -99,9 +99,9 @@ async function loadWorkspace() {
     rooms: data.rooms,
     organization: data.organization || { physicalAddress: "", referenceDetails: "" },
     reservations: data.reservations,
-    notifications: data.notifications || [],
-    unreadNotificationCount: Number(data.unreadNotificationCount || 0),
-    logs: data.logs,
+    notifications: data.user.role === "Administrateur" ? data.notifications || [] : [],
+    unreadNotificationCount: data.user.role === "Administrateur" ? Number(data.unreadNotificationCount || 0) : 0,
+    logs: data.user.role === "Administrateur" ? data.logs : [],
   };
   if (state.role === "Administrateur") {
     const result = await apiRequest("/api/users");
@@ -114,6 +114,7 @@ async function loadWorkspace() {
 
 function showLogin() {
   csrfToken = "";
+  showLoginForm();
   document.getElementById("appShell").classList.add("hidden");
   document.getElementById("authScreen").classList.remove("hidden");
   document.getElementById("loginPassword").value = "";
@@ -121,19 +122,41 @@ function showLogin() {
 }
 
 function showInitialSetup() {
-  document.getElementById("authTitle").textContent = "Créer le premier compte";
-  document.getElementById("authDescription").textContent = "Configurez l’application en créant votre compte administrateur. Cette étape ne peut être effectuée qu’une seule fois.";
-  document.getElementById("loginForm").classList.add("hidden");
-  document.getElementById("setupForm").classList.remove("hidden");
-  document.getElementById("authHelp").textContent = "Le premier compte reçoit le rôle Administrateur. Après sa création, cette configuration est définitivement désactivée.";
+  showAccountForm(true);
 }
 
 function showLoginForm() {
+  authMode = "login";
   document.getElementById("authTitle").textContent = "Connexion";
-  document.getElementById("authDescription").textContent = "Connectez-vous avec votre compte administrateur.";
+  document.getElementById("authDescription").textContent = "Connectez-vous pour accéder à votre espace de réservation.";
   document.getElementById("loginForm").classList.remove("hidden");
   document.getElementById("setupForm").classList.add("hidden");
-  document.getElementById("authHelp").textContent = "Les comptes sont créés par l’administrateur. L’inscription publique est désactivée.";
+  document.getElementById("setupForm").reset();
+  document.getElementById("loginError").classList.add("hidden");
+  document.getElementById("authActions").classList.remove("hidden");
+  document.getElementById("showLoginButton").setAttribute("aria-pressed", "true");
+  document.getElementById("showRegisterButton").setAttribute("aria-pressed", "false");
+  document.getElementById("authHelp").textContent = "Pas encore de compte ? Créez un compte utilisateur pour réserver une salle.";
+}
+
+function showAccountForm(initialSetup = false) {
+  authMode = initialSetup ? "setup" : "register";
+  document.getElementById("authTitle").textContent = initialSetup ? "Créer le premier compte" : "Créer un compte";
+  document.getElementById("authDescription").textContent = initialSetup
+    ? "Configurez l’application en créant votre compte administrateur. Cette étape ne peut être effectuée qu’une seule fois."
+    : "Inscrivez-vous pour consulter les disponibilités et réserver une salle.";
+  document.getElementById("loginForm").classList.add("hidden");
+  document.getElementById("loginPassword").value = "";
+  document.getElementById("setupForm").classList.remove("hidden");
+  document.getElementById("setupError").classList.add("hidden");
+  document.getElementById("accountPasswordLabel").textContent = initialSetup ? "Mot de passe administrateur" : "Mot de passe";
+  document.getElementById("setupButton").textContent = initialSetup ? "Créer mon compte administrateur" : "Créer mon compte";
+  document.getElementById("authActions").classList.toggle("hidden", initialSetup);
+  document.getElementById("showLoginButton").setAttribute("aria-pressed", "false");
+  document.getElementById("showRegisterButton").setAttribute("aria-pressed", "true");
+  document.getElementById("authHelp").textContent = initialSetup
+    ? "Le premier compte reçoit le rôle Administrateur. Après sa création, cette configuration est définitivement désactivée."
+    : "Votre compte reçoit le rôle Utilisateur. Les accès de gestion sont attribués uniquement par l’administrateur.";
 }
 
 async function establishSession() {
@@ -172,25 +195,6 @@ async function mutateAndRefresh(path, method, body) {
   await loadWorkspace();
 }
 
-function dateToISO(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function shiftDate(isoDate, amount, unit = "day") {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  if (unit === "month") {
-    const targetMonth = month - 1 + amount;
-    const targetYear = year + Math.floor(targetMonth / 12);
-    const normalizedMonth = ((targetMonth % 12) + 12) % 12;
-    const lastDay = new Date(targetYear, normalizedMonth + 1, 0).getDate();
-    return dateToISO(new Date(targetYear, normalizedMonth, Math.min(day, lastDay)));
-  }
-  return dateToISO(new Date(year, month - 1, day + amount));
-}
-
 function showToast(message, isError = false) {
   toast.textContent = message;
   toast.classList.toggle("error", isError);
@@ -207,11 +211,6 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#39;",
   })[character]);
-}
-
-function formatDate(isoDate, options = { day: "numeric", month: "short" }) {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  return new Intl.DateTimeFormat("fr-FR", options).format(new Date(year, month - 1, day));
 }
 
 function pdfSafeText(value) {
@@ -268,7 +267,7 @@ function createTicketPdf(reservations) {
       ["Objet", reservation.title],
       ["Evenement", reservation.eventType || "Reunion"],
       ["Date", formatDate(reservation.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
-      ["Horaire", `${reservation.start} - ${reservation.end}`],
+      ["Horaire (CAT, UTC+2)", `${reservation.start} - ${reservation.end}`],
       ["Participants", String(Number(reservation.guests))],
     ];
     for (const [label, value] of fields) {
@@ -334,7 +333,7 @@ function showReservationTicket(reservations) {
           <div><dt>Objet</dt><dd>${escapeHtml(reservation.title)}</dd></div>
           <div><dt>Événement</dt><dd>${escapeHtml(reservation.eventType || "Réunion")}</dd></div>
           <div><dt>Date</dt><dd>${escapeHtml(formatDate(reservation.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" }))}</dd></div>
-          <div><dt>Horaire</dt><dd>${escapeHtml(reservation.start)}–${escapeHtml(reservation.end)}</dd></div>
+          <div><dt>Horaire (CAT, UTC+2)</dt><dd>${escapeHtml(reservation.start)}–${escapeHtml(reservation.end)}</dd></div>
           <div><dt>Participants</dt><dd>${Number(reservation.guests)}</dd></div>
         </dl>
         <p class="ticket-note">Présentez cette référence pour toute demande d’information. Ce ticket confirme la réception de la demande, pas encore la validation de la réservation.</p>
@@ -428,6 +427,59 @@ function renderStats() {
   `).join("");
 }
 
+function getRoomImageKeys(room) {
+  const keys = Array.isArray(room.imageKeys)
+    ? room.imageKeys.filter((key) => ROOM_GALLERY_IMAGES.some((image) => image.key === key) || isUploadedRoomImageKey(key))
+    : [];
+  return keys.length ? keys : ["hall-classic"];
+}
+
+function updateRoomDetailsImage() {
+  const room = getRoom(roomDetailsId);
+  if (!room) {
+    document.getElementById("roomDetailsDialog").close();
+    showToast("Cette salle n’est plus disponible.", true);
+    return;
+  }
+  const keys = getRoomImageKeys(room);
+  roomDetailsImageIndex = (roomDetailsImageIndex + keys.length) % keys.length;
+  const image = document.getElementById("roomDetailsImage");
+  document.getElementById("roomDetailsImageError").classList.add("hidden");
+  image.src = roomImageUrl(keys[roomDetailsImageIndex]);
+  image.alt = `${room.name} · Photo ${roomDetailsImageIndex + 1} sur ${keys.length}`;
+  document.getElementById("roomDetailsCount").textContent = `${roomDetailsImageIndex + 1} / ${keys.length}`;
+  document.getElementById("roomDetailsPrevious").disabled = keys.length < 2;
+  document.getElementById("roomDetailsNext").disabled = keys.length < 2;
+}
+
+function openRoomDetails(id) {
+  const room = getRoom(Number(id));
+  if (!room) {
+    showToast("Salle introuvable.", true);
+    return;
+  }
+  roomDetailsId = room.id;
+  roomDetailsImageIndex = state.roomGalleryIndexes[room.id] || 0;
+  document.getElementById("roomDetailsTitle").textContent = room.name;
+  const details = [
+    ["Code", room.code],
+    ["Type", room.type],
+    ["Statut", room.active ? "Active" : "Inactive"],
+    ["Capacité", `${room.capacity} personnes`],
+    ["Emplacement", room.location || "Non renseigné"],
+    ["Adresse", room.physicalAddress || "Non renseignée"],
+    ["Horaires (CAT, UTC+2)", `${room.open}–${room.close}`],
+    ["Durée maximale", `${room.maxDuration} h`],
+    ["Équipements", room.equipment || "Aucun équipement renseigné"],
+  ];
+  document.getElementById("roomDetailsInfo").innerHTML = details.map(([label, value]) =>
+    `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`
+  ).join("");
+  document.getElementById("roomDetailsReserve").classList.toggle("hidden", !room.active);
+  updateRoomDetailsImage();
+  document.getElementById("roomDetailsDialog").showModal();
+}
+
 function renderRooms() {
   const query = document.getElementById("roomSearch").value.trim().toLocaleLowerCase("fr");
   const status = document.getElementById("roomStatusFilter").value;
@@ -439,17 +491,16 @@ function renderRooms() {
   const grid = document.getElementById("roomsGrid");
   grid.innerHTML = rooms.map((room) => {
     const todayCount = getActiveBookingsForRoom(room.id, dateToISO(new Date())).length;
-    const validImageKeys = Array.isArray(room.imageKeys)
-      ? room.imageKeys.filter((key) => ROOM_GALLERY_IMAGES.some((image) => image.key === key) || isUploadedRoomImageKey(key))
-      : [];
-    const imageKeys = validImageKeys.length ? validImageKeys : ["hall-classic"];
+    const imageKeys = getRoomImageKeys(room);
     const imageIndex = (state.roomGalleryIndexes[room.id] || 0) % imageKeys.length;
     const imageKey = imageKeys[imageIndex];
     const imageLabel = ROOM_GALLERY_IMAGES.find((image) => image.key === imageKey)?.label || "Photo de la salle";
     return `
       <article class="room-card ${room.active ? "" : "inactive-room"}">
         <div class="room-gallery">
-          <img src="${roomImageUrl(imageKey)}" alt="${escapeHtml(imageLabel)} · ${escapeHtml(room.name)}" loading="lazy" />
+          <button type="button" class="room-gallery-open" data-room-details="${room.id}" aria-label="Agrandir les photos et voir les détails de ${escapeHtml(room.name)}" aria-haspopup="dialog">
+            <img src="${roomImageUrl(imageKey)}" alt="${escapeHtml(imageLabel)} · ${escapeHtml(room.name)}" loading="lazy" />
+          </button>
           <span>${escapeHtml(room.type)}</span>
           ${imageKeys.length > 1 ? `
             <button type="button" class="room-gallery-arrow previous" data-room-image-move="${room.id}" data-direction="-1" aria-label="Photo précédente de ${escapeHtml(room.name)}">‹</button>
@@ -568,15 +619,16 @@ function renderCalendar() {
     days = [date];
     document.getElementById("calendarPeriod").textContent = formatDate(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   } else if (view === "week") {
-    const first = new Date(year, month - 1, day);
-    first.setDate(first.getDate() - ((first.getDay() + 6) % 7));
-    days = Array.from({ length: 7 }, (_, index) => dateToISO(new Date(first.getFullYear(), first.getMonth(), first.getDate() + index)));
+    const first = new Date(Date.UTC(year, month - 1, day));
+    const weekStart = shiftDate(date, -((first.getUTCDay() + 6) % 7));
+    days = Array.from({ length: 7 }, (_, index) => shiftDate(weekStart, index));
     document.getElementById("calendarPeriod").textContent = `${formatDate(days[0], { day: "numeric", month: "long" })} – ${formatDate(days[6], { day: "numeric", month: "long", year: "numeric" })}`;
   } else {
-    const firstDay = new Date(year, month - 1, 1);
-    const gridStart = new Date(year, month - 1, 1 - ((firstDay.getDay() + 6) % 7));
-    days = Array.from({ length: 42 }, (_, index) => dateToISO(new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + index)));
-    document.getElementById("calendarPeriod").textContent = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(firstDay);
+    const monthStart = `${date.slice(0, 7)}-01`;
+    const firstDay = new Date(`${monthStart}T00:00:00.000Z`);
+    const gridStart = shiftDate(monthStart, -((firstDay.getUTCDay() + 6) % 7));
+    days = Array.from({ length: 42 }, (_, index) => shiftDate(gridStart, index));
+    document.getElementById("calendarPeriod").textContent = formatDate(monthStart, { month: "long", year: "numeric" });
   }
   const headers = view === "month" ? '<div class="weekday">Lun.</div><div class="weekday">Mar.</div><div class="weekday">Mer.</div><div class="weekday">Jeu.</div><div class="weekday">Ven.</div><div class="weekday">Sam.</div><div class="weekday">Dim.</div>' : "";
   const today = dateToISO(new Date());
@@ -601,13 +653,20 @@ function renderCalendar() {
 }
 
 function renderReports() {
-  const today = new Date();
-  const monthPrefix = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  if (state.role !== "Administrateur") {
+    document.getElementById("auditTable").replaceChildren();
+    for (const id of ["monthlyBookings", "monthlyHours", "occupancyRate", "closedBookings"]) {
+      document.getElementById(id).textContent = "";
+    }
+    return;
+  }
+  const monthPrefix = dateToISO().slice(0, 7);
+  const [year, month] = monthPrefix.split("-").map(Number);
   const monthBookings = state.reservations.filter((booking) => booking.date.startsWith(monthPrefix));
   const activeMonthBookings = monthBookings.filter((booking) => ACTIVE_STATUSES.has(booking.status));
   const bookedMinutes = activeMonthBookings.reduce((sum, booking) => sum + timeToMinutes(booking.end) - timeToMinutes(booking.start), 0);
   const activeRoomCount = state.rooms.filter((room) => room.active).length;
-  const monthDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const monthDays = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const availableMinutes = activeRoomCount * monthDays * 8 * 60;
   document.getElementById("monthlyBookings").textContent = String(monthBookings.length);
   document.getElementById("monthlyHours").textContent = `${(bookedMinutes / 60).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} h`;
@@ -615,7 +674,7 @@ function renderReports() {
   document.getElementById("closedBookings").textContent = String(monthBookings.filter((booking) => booking.status === "annulé" || booking.status === "refusé").length);
   const auditTable = document.getElementById("auditTable");
   auditTable.innerHTML = state.logs.slice(0, 20).map((entry) =>
-    `<tr><td>${new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(entry.at))}</td><td>${escapeHtml(entry.action)}</td><td>${escapeHtml(entry.detail)}</td><td>${escapeHtml(entry.actor || entry.role)}</td></tr>`
+    `<tr><td>${formatDateTime(entry.at)}</td><td>${escapeHtml(entry.action)}</td><td>${escapeHtml(entry.detail)}</td><td>${escapeHtml(entry.actor || entry.role)}</td></tr>`
   ).join("");
   document.getElementById("auditEmpty").classList.toggle("hidden", state.logs.length > 0);
 }
@@ -627,12 +686,12 @@ function renderNotifications() {
   badge.classList.toggle("hidden", count === 0);
   document.getElementById("markAllNotificationsReadBtn").disabled = count === 0;
   const list = document.getElementById("notificationsList");
-  list.innerHTML = state.notifications.map((notification) => `
+  list.innerHTML = (state.role === "Administrateur" ? state.notifications : []).map((notification) => `
     <article class="notification-item ${notification.readAt ? "" : "unread"}">
       <div>
         <h3>${escapeHtml(notification.title)}</h3>
         <p>${escapeHtml(notification.message)}</p>
-        <time datetime="${escapeHtml(notification.createdAt)}">${new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(notification.createdAt))}</time>
+        <time datetime="${escapeHtml(notification.createdAt)}">${formatDateTime(notification.createdAt, { dateStyle: "medium", timeStyle: "short" })}</time>
       </div>
       ${notification.readAt ? '<span class="notification-read-label">Lue</span>' : `<button class="action-btn" type="button" data-notification-read="${notification.id}">Marquer comme lue</button>`}
     </article>
@@ -642,9 +701,7 @@ function renderNotifications() {
 
 function renderIdentity() {
   document.getElementById("roleLabel").textContent = state.role;
-  document.getElementById("roleDescription").textContent = ROLE_DESCRIPTIONS[state.role];
   document.getElementById("userNameLabel").textContent = state.userName;
-  document.getElementById("userRoleLabel").textContent = state.role;
   document.getElementById("userAvatar").textContent = state.userName.split(/\s+/).slice(0, 2).map((part) => part[0] || "").join("").toLocaleUpperCase("fr");
   document.getElementById("reservationOwner").value = state.userName;
   document.querySelectorAll(".manager-only").forEach((element) => element.classList.toggle("hidden", !isManager()));
@@ -705,7 +762,7 @@ function render() {
   renderNotifications();
   renderUsers();
   renderOrganizationSettings();
-  document.getElementById("todayLabel").textContent = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
+  document.getElementById("todayLabel").textContent = formatDateTime(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
 function setupShowcase() {
@@ -775,6 +832,16 @@ function setupShowcase() {
 
 const refreshShowcaseTimer = setupShowcase();
 
+function updateRecurrenceFields() {
+  const recurrence = document.getElementById("recurrence").value;
+  const hasInterval = recurrence === "hourly" || recurrence === "daily";
+  document.getElementById("occurrencesField").classList.toggle("hidden", recurrence === "none");
+  document.getElementById("recurrenceIntervalField").classList.toggle("hidden", !hasInterval);
+  document.getElementById("recurrenceInterval").disabled = !hasInterval;
+  document.getElementById("recurrenceInterval").required = hasInterval;
+  document.getElementById("recurrenceIntervalLabel").textContent = recurrence === "hourly" ? "Intervalle en heures" : "Intervalle en jours";
+}
+
 function resetReservationForm() {
   document.getElementById("reservationForm").reset();
   document.getElementById("reservationId").value = "";
@@ -791,7 +858,7 @@ function resetReservationForm() {
   document.getElementById("submitReservationBtn").textContent = "Envoyer la demande";
   document.getElementById("cancelEditBtn").classList.add("hidden");
   document.getElementById("recurrence").disabled = false;
-  document.getElementById("occurrencesField").classList.toggle("hidden", document.getElementById("recurrence").value === "none");
+  updateRecurrenceFields();
 }
 
 function openRoomModal(room = null) {
@@ -910,6 +977,11 @@ async function handleReservationSubmit(event) {
     showToast("Le nombre de séances doit être compris entre 1 et 12.", true);
     return;
   }
+  const recurrenceInterval = ["hourly", "daily"].includes(recurrence) ? Number(document.getElementById("recurrenceInterval").value) : 1;
+  if (!Number.isSafeInteger(recurrenceInterval) || recurrenceInterval < 1) {
+    showToast("L’intervalle de récurrence doit être un nombre entier positif.", true);
+    return;
+  }
   const paymentMethod = document.getElementById("reservationPaymentMethod")?.value || "À payer";
   const paymentStatus = document.getElementById("reservationPaymentStatus")?.value || "Non demandé";
   const amount = Number(document.getElementById("reservationAmount")?.value || 0);
@@ -922,7 +994,7 @@ async function handleReservationSubmit(event) {
     } else {
       const result = await apiRequest("/api/reservations", {
         method: "POST",
-        body: { ...bookingData, recurrence, occurrences: occurrenceCount },
+        body: { ...bookingData, recurrence, occurrences: occurrenceCount, recurrenceInterval },
       });
       resetReservationForm();
       showReservationTicket(result.reservations);
@@ -1069,7 +1141,7 @@ function startEditReservation(id) {
   document.getElementById("cancelEditBtn").classList.remove("hidden");
   document.getElementById("recurrence").value = "none";
   document.getElementById("recurrence").disabled = true;
-  document.getElementById("occurrencesField").classList.add("hidden");
+  updateRecurrenceFields();
   document.getElementById("reservationSection").scrollIntoView({ behavior: "smooth", block: "start" });
   document.getElementById("reservationTitle").focus({ preventScroll: true });
 }
@@ -1151,6 +1223,10 @@ function csvCell(value) {
 }
 
 function exportReservations() {
+  if (state.role !== "Administrateur") {
+    showToast("L’export CSV est réservé aux administrateurs.", true);
+    return;
+  }
   const rows = [
     ["Salle", "Code", "Date", "Début", "Fin", "Objet", "Type d’événement", "Demandeur", "Participants", "Statut", "Commentaire"],
     ...getSortedReservations().map((booking) => {
@@ -1265,12 +1341,21 @@ document.addEventListener("click", (event) => {
   button.setAttribute("aria-pressed", String(visible));
   button.setAttribute("aria-label", visible ? "Masquer le mot de passe" : "Afficher le mot de passe");
 });
+document.getElementById("showLoginButton").addEventListener("click", () => {
+  showLoginForm();
+  document.getElementById("loginEmail").focus();
+});
+document.getElementById("showRegisterButton").addEventListener("click", () => {
+  showAccountForm();
+  document.getElementById("setupName").focus();
+});
 document.getElementById("loginForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const error = document.getElementById("loginError");
   const button = document.getElementById("loginButton");
   error.classList.add("hidden");
   button.disabled = true;
+  document.getElementById("showRegisterButton").disabled = true;
   try {
     const session = await apiRequest("/api/auth/login", {
       method: "POST",
@@ -1291,6 +1376,7 @@ document.getElementById("loginForm").addEventListener("submit", async (event) =>
     document.getElementById("loginPassword").value = "";
   } finally {
     button.disabled = false;
+    document.getElementById("showRegisterButton").disabled = false;
   }
 });
 document.getElementById("setupForm").addEventListener("submit", async (event) => {
@@ -1298,6 +1384,7 @@ document.getElementById("setupForm").addEventListener("submit", async (event) =>
   const error = document.getElementById("setupError");
   const button = document.getElementById("setupButton");
   const password = document.getElementById("setupPassword").value;
+  const initialSetup = authMode === "setup";
   error.classList.add("hidden");
   if (password !== document.getElementById("setupConfirmPassword").value) {
     error.textContent = "Les mots de passe ne correspondent pas.";
@@ -1305,8 +1392,10 @@ document.getElementById("setupForm").addEventListener("submit", async (event) =>
     return;
   }
   button.disabled = true;
+  document.getElementById("showLoginButton").disabled = true;
+  document.getElementById("showRegisterButton").disabled = true;
   try {
-    const session = await apiRequest("/api/auth/setup", {
+    const session = await apiRequest(initialSetup ? "/api/auth/setup" : "/api/auth/register", {
       method: "POST",
       body: {
         name: document.getElementById("setupName").value.trim(),
@@ -1323,13 +1412,15 @@ document.getElementById("setupForm").addEventListener("submit", async (event) =>
   } catch (setupError) {
     error.textContent = setupError.message;
     error.classList.remove("hidden");
-    if (setupError.status === 409) {
+    if (initialSetup && setupError.status === 409) {
       showLoginForm();
       document.getElementById("loginError").textContent = setupError.message;
       document.getElementById("loginError").classList.remove("hidden");
     }
   } finally {
     button.disabled = false;
+    document.getElementById("showLoginButton").disabled = false;
+    document.getElementById("showRegisterButton").disabled = false;
   }
 });
 document.getElementById("logoutBtn").addEventListener("click", async () => {
@@ -1453,15 +1544,19 @@ document.getElementById("calendarToday").addEventListener("click", () => {
   state.calendarDate = dateToISO(new Date());
   renderCalendar();
 });
-document.getElementById("recurrence").addEventListener("change", (event) => {
-  document.getElementById("occurrencesField").classList.toggle("hidden", event.target.value === "none");
-});
+document.getElementById("recurrence").addEventListener("change", updateRecurrenceFields);
 document.getElementById("roomsGrid").addEventListener("click", (event) => {
+  const detailsButton = event.target.closest("[data-room-details]");
+  if (detailsButton) {
+    openRoomDetails(detailsButton.dataset.roomDetails);
+    return;
+  }
   const moveButton = event.target.closest("[data-room-image-move]");
   if (moveButton) {
     const roomId = Number(moveButton.dataset.roomImageMove);
     const room = getRoom(roomId);
-    const images = Array.isArray(room?.imageKeys) ? room.imageKeys : [];
+    if (!room) return;
+    const images = getRoomImageKeys(room);
     const nextIndex = (state.roomGalleryIndexes[roomId] || 0) + Number(moveButton.dataset.direction);
     state.roomGalleryIndexes[roomId] = (nextIndex + images.length) % images.length;
     renderRooms();
@@ -1475,6 +1570,43 @@ document.getElementById("roomsGrid").addEventListener("click", (event) => {
   }
   const button = event.target.closest("[data-room-action]");
   if (button) handleRoomAction(button.dataset.roomAction, button.dataset.id);
+});
+document.getElementById("closeRoomDetailsBtn").addEventListener("click", () => {
+  document.getElementById("roomDetailsDialog").close();
+});
+document.getElementById("roomDetailsDialog").addEventListener("click", (event) => {
+  const dialog = event.currentTarget;
+  const bounds = dialog.getBoundingClientRect();
+  if (event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right ||
+      event.clientY < bounds.top || event.clientY > bounds.bottom)) dialog.close();
+});
+document.getElementById("roomDetailsDialog").addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.close();
+    return;
+  }
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    event.preventDefault();
+    roomDetailsImageIndex += event.key === "ArrowLeft" ? -1 : 1;
+    updateRoomDetailsImage();
+  }
+});
+document.getElementById("roomDetailsPrevious").addEventListener("click", () => {
+  roomDetailsImageIndex -= 1;
+  updateRoomDetailsImage();
+});
+document.getElementById("roomDetailsNext").addEventListener("click", () => {
+  roomDetailsImageIndex += 1;
+  updateRoomDetailsImage();
+});
+document.getElementById("roomDetailsImage").addEventListener("error", () => {
+  document.getElementById("roomDetailsImageError").classList.remove("hidden");
+});
+document.getElementById("roomDetailsReserve").addEventListener("click", () => {
+  document.getElementById("roomDetailsDialog").close();
+  handleRoomAction("reserve", String(roomDetailsId));
 });
 document.getElementById("bookingTable").addEventListener("click", (event) => {
   const button = event.target.closest("[data-booking-action]");

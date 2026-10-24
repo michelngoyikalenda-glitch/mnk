@@ -99,8 +99,57 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   assert.equal(page.status, 200);
   const pageHtml = await page.text();
   assert.match(pageHtml, /Espace sécurisé/);
+  for (const id of ["setupPassword", "setupConfirmPassword", "newUserPassword", "newPassword", "confirmPassword"]) {
+    assert.match(pageHtml, new RegExp(`id="${id}"[^>]*minlength="8" maxlength="12"`));
+  }
+  assert.doesNotMatch(pageHtml, /12 caractères minimum/);
+  assert.doesNotMatch(pageHtml, /type="time"/);
+  for (const id of ["startTime", "endTime", "newRoomOpen", "newRoomClose"]) {
+    assert.match(pageHtml, new RegExp(`id="${id}" type="text"[^>]*pattern="\\(\\[01\\]\\[0-9\\]\\|2\\[0-3\\]\\):\\[0-5\\]\\[0-9\\]"`));
+  }
+  assert.match(pageHtml, /id="showLoginButton"[^>]*>Se connecter<\/button>/);
+  assert.match(pageHtml, /id="showRegisterButton"[^>]*>Créer un compte<\/button>/);
+  assert.doesNotMatch(pageHtml, /Connectez-vous avec votre compte administrateur/);
+  for (const section of ["notificationsSection", "reportsSection"]) {
+    assert.match(pageHtml, new RegExp(`<a class="nav-item admin-only hidden" href="#${section}"`));
+    assert.match(pageHtml, new RegExp(`<section class="panel section-panel admin-only hidden" id="${section}"`));
+  }
   assert.match(pageHtml, /src="\/assets\/brand-logo\.png"/);
+  const footer = pageHtml.slice(pageHtml.indexOf("<footer"), pageHtml.indexOf("</footer>"));
+  assert.ok(footer.includes("Tout droit reserver © 2026. RoomFlow By Michel Ngoyi"));
+  assert.doesNotMatch(footer, /RoomFlow · Réservation de salles|Vos demandes et les actions sensibles sont gérées et journalisées par le serveur\./);
+  for (const url of [
+    "https://www.tiktok.com/@michelngoyikalend",
+    "https://x.com/kalenda1497",
+    "https://www.linkedin.com/in/michel-ngoyi-296ba4241",
+    "https://www.facebook.com/michel.ngoyikalenda",
+    "https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=michelngoyikalenda%40gmail.com",
+    "https://wa.me/243851699229",
+    "tel:+243851699229",
+  ]) {
+    assert.ok(footer.includes(`href="${url}"`), `Missing footer contact: ${url}`);
+  }
+  for (const link of [
+    'href="https://wa.me/243851699229" target="_blank" rel="noopener noreferrer"',
+    'href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=michelngoyikalenda%40gmail.com" target="_blank" rel="noopener noreferrer"',
+    'href="https://www.tiktok.com/@michelngoyikalend" target="_blank" rel="noopener noreferrer"',
+    'href="https://x.com/kalenda1497" target="_blank" rel="noopener noreferrer"',
+    'href="https://www.linkedin.com/in/michel-ngoyi-296ba4241" target="_blank" rel="noopener noreferrer"',
+    'href="https://www.facebook.com/michel.ngoyikalenda" target="_blank" rel="noopener noreferrer"',
+  ]) {
+    assert.ok(footer.includes(link), `Contact link must open safely in a new tab: ${link}`);
+  }
+  for (const [, source] of footer.matchAll(/<img[^>]*src="([^"]+)"/g)) {
+    const icon = await fetch(`${baseUrl}${source}`);
+    assert.equal(icon.status, 200, `Footer image unavailable: ${source}`);
+    assert.match(icon.headers.get("content-type"), /^image\//);
+    assert.ok((await icon.arrayBuffer()).byteLength > 0);
+  }
   assert.match(pageHtml, /id="ticketModal"/);
+  assert.match(pageHtml, /<dialog id="roomDetailsDialog"[^>]*aria-labelledby="roomDetailsTitle"/);
+  for (const id of ["roomDetailsImage", "roomDetailsInfo", "roomDetailsPrevious", "roomDetailsNext", "roomDetailsReserve"]) {
+    assert.match(pageHtml, new RegExp(`id="${id}"`));
+  }
   assert.match(pageHtml, /Télécharger le ticket PDF/);
   assert.match(pageHtml, /id="printTicketBtn">Imprimer/);
   for (const section of ["homeSection", "aboutSection", "reservationSection", "servicesSection"]) {
@@ -109,11 +158,18 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   }
   assert.match(pageHtml, /Nos services/);
   const roomTypeSelect = pageHtml.match(/<select id="newRoomType">([\s\S]*?)<\/select>/)?.[1] || "";
-  for (const type of ["Mariage", "Veillée mortuaire", "Anniversaire"]) {
+  assert.doesNotMatch(pageHtml, /Veillée mortuaire/);
+  assert.match(pageHtml, /<option>Salle mortuaire<\/option>/);
+  for (const type of ["Mariage", "Salle mortuaire", "Anniversaire"]) {
     assert.match(roomTypeSelect, new RegExp(`<option>${type}</option>`));
   }
   assert.equal(page.headers.get("content-security-policy")?.includes("frame-ancestors 'none'"), true);
   assert.equal((await fetch(`${baseUrl}/server.mjs`)).status, 404);
+  const datetimeModule = await fetch(`${baseUrl}/datetime.mjs`);
+  assert.equal(datetimeModule.status, 200);
+  assert.match(datetimeModule.headers.get("content-type"), /javascript/);
+  assert.match(await datetimeModule.text(), /Africa\/Lubumbashi/);
+  assert.match(pageHtml, /<script type="module" src="script.js"><\/script>/);
   const logo = await fetch(`${baseUrl}/assets/brand-logo.png`);
   assert.equal(logo.status, 200);
   assert.match(logo.headers.get("content-type"), /image\/png/);
@@ -134,6 +190,7 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
     body: { email: "admin@example.test", password: "wrong-password" },
   });
   assert.equal(badLogin.response.status, 401);
+  assert.equal(badLogin.payload.error, "Adresse e-mail ou mot de passe incorrect. Le mot de passe doit contenir entre 8 et 12 caractères.");
 
   const login = await call("/api/auth/login", {
     method: "POST",
@@ -202,11 +259,19 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   });
   assert.equal(wrongOrigin.response.status, 403);
 
+  for (const password of ["1234567", "1234567890123"]) {
+    const rejected = await call("/api/users", {
+      method: "POST", cookie: adminCookie, csrf: adminCsrf,
+      body: { name: "Utilisateur Test", email: "user@example.test", role: "Utilisateur", password },
+    });
+    assert.equal(rejected.response.status, 400);
+    assert.match(rejected.payload.error, /entre 8 et 12 caractères/);
+  }
   const createdUser = await call("/api/users", {
     method: "POST",
     cookie: adminCookie,
     csrf: adminCsrf,
-    body: { name: "Utilisateur Test", email: "user@example.test", role: "Utilisateur", password: "A Secure User Pass 2026!" },
+    body: { name: "Utilisateur Test", email: "user@example.test", role: "Utilisateur", password: "User123!" },
   });
   assert.equal(createdUser.response.status, 201);
   const createdRoom = await call("/api/rooms", {
@@ -215,7 +280,14 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   });
   assert.equal(createdRoom.response.status, 201);
   assert.deepEqual(createdRoom.payload.room.imageKeys, ["boardroom", uploadedPhoto.key]);
-  for (const [index, type] of ["Mariage", "Veillée mortuaire", "Anniversaire"].entries()) {
+  for (const invalidTime of ["24:00", "08:60", "08 AM"]) {
+    const invalidRoomTime = await call("/api/rooms", {
+      method: "POST", cookie: adminCookie, csrf: adminCsrf,
+      body: { ...createdRoom.payload.room, name: "Horaire invalide", code: "BAD-TIME", open: invalidTime },
+    });
+    assert.equal(invalidRoomTime.response.status, 400);
+  }
+  for (const [index, type] of ["Mariage", "Salle mortuaire", "Anniversaire"].entries()) {
     const typedRoom = await call("/api/rooms", {
       method: "POST",
       cookie: adminCookie,
@@ -273,7 +345,7 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
 
   const userLogin = await call("/api/auth/login", {
     method: "POST",
-    body: { email: "user@example.test", password: "A Secure User Pass 2026!" },
+    body: { email: "user@example.test", password: "User123!" },
   });
   assert.equal(userLogin.response.status, 200);
   const userCookie = cookieFrom(userLogin.response);
@@ -307,6 +379,44 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
 
   const bookingDate = new Date(Date.now() + 31 * 86400000).toISOString().slice(0, 10);
   const booking = { roomId: 1, date: bookingDate, start: "13:00", end: "14:00", title: "Réservation protégée", eventType: "Mariage", guests: 3, comment: "" };
+  const recurrenceDate = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
+  const hourly = await call("/api/reservations", {
+    method: "POST", cookie: userCookie, csrf: userCsrf,
+    body: { ...booking, date: recurrenceDate, start: "08:00", end: "09:00", recurrence: "hourly", recurrenceInterval: 2, occurrences: 3 },
+  });
+  assert.equal(hourly.response.status, 201);
+  assert.deepEqual(hourly.payload.reservations.map(({ date, start, end }) => [date, start, end]), [
+    [recurrenceDate, "08:00", "09:00"], [recurrenceDate, "10:00", "11:00"], [recurrenceDate, "12:00", "13:00"],
+  ]);
+  const dailyDate = new Date(Date.now() + 65 * 86400000).toISOString().slice(0, 10);
+  const daily = await call("/api/reservations", {
+    method: "POST", cookie: userCookie, csrf: userCsrf,
+    body: { ...booking, date: dailyDate, recurrence: "daily", recurrenceInterval: 3, occurrences: 3 },
+  });
+  assert.equal(daily.response.status, 201);
+  assert.deepEqual(daily.payload.reservations.map(({ date, start, end }) => [date, start, end]),
+    [65, 68, 71].map((days) => [new Date(Date.now() + days * 86400000).toISOString().slice(0, 10), "13:00", "14:00"]));
+  for (const recurrenceInterval of [0, -1, 1.5, "invalide", 1e30]) {
+    const invalidInterval = await call("/api/reservations", {
+      method: "POST", cookie: userCookie, csrf: userCsrf,
+      body: { ...booking, date: dailyDate, recurrence: "hourly", recurrenceInterval, occurrences: 2 },
+    });
+    assert.equal(invalidInterval.response.status, 400);
+  }
+  const rollbackDate = new Date(Date.now() + 75 * 86400000).toISOString().slice(0, 10);
+  for (const [start, end, recurrenceInterval, status] of [
+    ["08:00", "10:00", 1, 409],
+    ["08:00", "09:00", 15, 400],
+    ["08:00", "10:00", 1e12, 400],
+  ]) {
+    const failedSeries = await call("/api/reservations", {
+      method: "POST", cookie: userCookie, csrf: userCsrf,
+      body: { ...booking, date: rollbackDate, start, end, recurrence: "hourly", recurrenceInterval, occurrences: 2 },
+    });
+    assert.equal(failedSeries.response.status, status);
+    const workspace = await call("/api/bootstrap", { cookie: userCookie });
+    assert.equal(workspace.payload.reservations.some((item) => item.date === rollbackDate), false);
+  }
   const createdBooking = await call("/api/reservations", {
     method: "POST", cookie: userCookie, csrf: userCsrf,
     body: { ...booking, recurrence: "none", occurrences: 1 },
@@ -327,11 +437,20 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   assert.equal(updatedBooking.response.status, 200);
   assert.equal(updatedBooking.payload.reservation.eventType, "Anniversaire");
   const bookingNotifications = await call("/api/bootstrap", { cookie: userCookie });
-  assert.equal(bookingNotifications.payload.notifications.length, 2);
-  assert.equal(bookingNotifications.payload.notifications[0].title, "Réservation modifiée");
-  assert.equal(bookingNotifications.payload.notifications[1].title, "Demande envoyée");
-  assert.equal(bookingNotifications.payload.unreadNotificationCount, 2);
-  const notificationId = bookingNotifications.payload.notifications[0].id;
+  assert.deepEqual(bookingNotifications.payload.notifications, []);
+  assert.equal(bookingNotifications.payload.unreadNotificationCount, 0);
+  assert.deepEqual(bookingNotifications.payload.logs, []);
+  const readStoredNotifications = () => {
+    const db = new DatabaseSync(join(dataDirectory, "roomflow.sqlite"));
+    try {
+      return db.prepare("SELECT * FROM notifications WHERE user_id=? ORDER BY id DESC").all(userLogin.payload.user.id);
+    } finally {
+      db.close();
+    }
+  };
+  assert.equal(readStoredNotifications()[0].title, "Réservation modifiée");
+  assert.equal(readStoredNotifications()[1].title, "Demande envoyée");
+  const notificationId = readStoredNotifications()[0].id;
   const deniedNotificationRead = await call(`/api/notifications/${notificationId}/read`, {
     method: "POST", cookie: adminCookie, csrf: adminCsrf, body: {},
   });
@@ -344,13 +463,13 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   const markedRead = await call(`/api/notifications/${notificationId}/read`, {
     method: "POST", cookie: userCookie, csrf: userCsrf, body: {},
   });
-  assert.equal(markedRead.response.status, 200);
+  assert.equal(markedRead.response.status, 403);
   const readNotificationState = await call("/api/bootstrap", { cookie: userCookie });
-  assert.equal(readNotificationState.payload.unreadNotificationCount, 1);
-  const markedCreationRead = await call(`/api/notifications/${bookingNotifications.payload.notifications[1].id}/read`, {
+  assert.equal(readNotificationState.payload.unreadNotificationCount, 0);
+  const markedCreationRead = await call(`/api/notifications/${readStoredNotifications()[1].id}/read`, {
     method: "POST", cookie: userCookie, csrf: userCsrf, body: {},
   });
-  assert.equal(markedCreationRead.response.status, 200);
+  assert.equal(markedCreationRead.response.status, 403);
   const allBookingNotificationsRead = await call("/api/bootstrap", { cookie: userCookie });
   assert.equal(allBookingNotificationsRead.payload.unreadNotificationCount, 0);
 
@@ -359,12 +478,13 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   });
   assert.equal(confirmed.response.status, 200);
   const confirmationNotification = await call("/api/bootstrap", { cookie: userCookie });
-  assert.equal(confirmationNotification.payload.notifications[0].title, "Réservation confirmée");
-  assert.equal(confirmationNotification.payload.unreadNotificationCount, 1);
+  assert.equal(readStoredNotifications()[0].title, "Réservation confirmée");
+  assert.deepEqual(confirmationNotification.payload.notifications, []);
+  assert.equal(confirmationNotification.payload.unreadNotificationCount, 0);
   const markAllRead = await call("/api/notifications/read-all", {
     method: "POST", cookie: userCookie, csrf: userCsrf, body: {},
   });
-  assert.equal(markAllRead.response.status, 200);
+  assert.equal(markAllRead.response.status, 403);
   assert.equal((await call("/api/bootstrap", { cookie: userCookie })).payload.unreadNotificationCount, 0);
 
   const refusedBooking = await call("/api/reservations", {
@@ -377,12 +497,13 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   });
   assert.equal(refused.response.status, 200);
   const refusalNotification = await call("/api/bootstrap", { cookie: userCookie });
-  assert.equal(refusalNotification.payload.notifications[0].title, "Demande refusée");
-  assert.equal(refusalNotification.payload.unreadNotificationCount, 2);
+  assert.equal(readStoredNotifications()[0].title, "Demande refusée");
+  assert.deepEqual(refusalNotification.payload.notifications, []);
+  assert.equal(refusalNotification.payload.unreadNotificationCount, 0);
   const readRefusalNotifications = await call("/api/notifications/read-all", {
     method: "POST", cookie: userCookie, csrf: userCsrf, body: {},
   });
-  assert.equal(readRefusalNotifications.response.status, 200);
+  assert.equal(readRefusalNotifications.response.status, 403);
 
   const cancellableBooking = await call("/api/reservations", {
     method: "POST", cookie: userCookie, csrf: userCsrf,
@@ -394,12 +515,62 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   });
   assert.equal(cancellation.response.status, 200);
   const cancellationNotification = await call("/api/bootstrap", { cookie: userCookie });
-  assert.equal(cancellationNotification.payload.notifications[0].title, "Réservation annulée");
-  assert.match(cancellationNotification.payload.notifications[0].message, /Changement de programme/);
+  assert.equal(readStoredNotifications()[0].title, "Réservation annulée");
+  assert.match(readStoredNotifications()[0].message, /Changement de programme/);
+  assert.deepEqual(cancellationNotification.payload.notifications, []);
+  assert.deepEqual(cancellationNotification.payload.logs, []);
 
+  const adminWorkspace = await call("/api/bootstrap", { cookie: adminCookie });
+  assert.ok(adminWorkspace.payload.logs.length > 0);
+  assert.ok(adminWorkspace.payload.notifications.length > 0);
+  const adminNotification = adminWorkspace.payload.notifications[0];
+  assert.equal((await call(`/api/notifications/${adminNotification.id}/read`, {
+    method: "POST", cookie: adminCookie, csrf: adminCsrf, body: {},
+  })).response.status, 200);
+  assert.equal((await call("/api/notifications/read-all", {
+    method: "POST", cookie: adminCookie, csrf: adminCsrf, body: {},
+  })).response.status, 200);
+  assert.equal((await call("/api/bootstrap", { cookie: adminCookie })).payload.unreadNotificationCount, 0);
+
+  const promoted = await call(`/api/users/${userLogin.payload.user.id}`, {
+    method: "PATCH", cookie: adminCookie, csrf: adminCsrf, body: { role: "Gestionnaire" },
+  });
+  assert.equal(promoted.response.status, 200);
+  const managerWorkspace = await call("/api/bootstrap", { cookie: userCookie });
+  assert.equal(managerWorkspace.payload.user.role, "Gestionnaire");
+  assert.deepEqual(managerWorkspace.payload.logs, []);
+  assert.deepEqual(managerWorkspace.payload.notifications, []);
+  assert.equal(managerWorkspace.payload.unreadNotificationCount, 0);
+  for (const path of ["/api/notifications/read-all", `/api/notifications/${notificationId}/read`]) {
+    assert.equal((await call(path, {
+      method: "POST", cookie: userCookie, csrf: userCsrf, body: {},
+    })).response.status, 403);
+  }
+  assert.equal((await call(`/api/users/${userLogin.payload.user.id}`, {
+    method: "PATCH", cookie: adminCookie, csrf: adminCsrf, body: { role: "Utilisateur" },
+  })).response.status, 200);
+
+  for (const [cookie, csrf, currentPassword] of [
+    [adminCookie, adminCsrf, initialPassword],
+    [userCookie, userCsrf, "User123!"],
+  ]) {
+    for (const newPassword of ["1234567", "1234567890123"]) {
+      const rejected = await call("/api/auth/password", {
+        method: "POST", cookie, csrf,
+        body: { currentPassword, newPassword },
+      });
+      assert.equal(rejected.response.status, 400);
+      assert.match(rejected.payload.error, /entre 8 et 12 caractères/);
+    }
+  }
+  const adminPasswordChange = await call("/api/auth/password", {
+    method: "POST", cookie: adminCookie, csrf: adminCsrf,
+    body: { currentPassword: initialPassword, newPassword: "Admin123456!" },
+  });
+  assert.equal(adminPasswordChange.response.status, 200);
   const passwordChange = await call("/api/auth/password", {
     method: "POST", cookie: userCookie, csrf: userCsrf,
-    body: { currentPassword: "A Secure User Pass 2026!", newPassword: "An Even Safer User Pass 2027!" },
+    body: { currentPassword: "User123!", newPassword: "New1234!" },
   });
   assert.equal(passwordChange.response.status, 200);
   const rotatedCookie = cookieFrom(passwordChange.response);
@@ -411,18 +582,22 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   assert.equal(afterLogout.response.status, 401);
 });
 
-test("first-run setup creates only one administrator", async (t) => {
+test("first-run setup and public registration preserve account roles and limits", async (t) => {
   const dataDirectory = mkdtempSync(join(tmpdir(), "roomflow-setup-test-"));
   const port = await getFreePort();
   const baseUrl = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, ["server.mjs"], {
-    cwd: projectRoot,
-    env: { ...process.env, HOST: "127.0.0.1", PORT: String(port), ROOMFLOW_DATA_DIR: dataDirectory },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
   let serverOutput = "";
-  child.stdout.on("data", (chunk) => { serverOutput += chunk.toString(); });
-  child.stderr.on("data", (chunk) => { serverOutput += chunk.toString(); });
+  const startServer = () => {
+    const childProcess = spawn(process.execPath, ["server.mjs"], {
+      cwd: projectRoot,
+      env: { ...process.env, HOST: "127.0.0.1", PORT: String(port), ROOMFLOW_DATA_DIR: dataDirectory },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    childProcess.stdout.on("data", (chunk) => { serverOutput += chunk.toString(); });
+    childProcess.stderr.on("data", (chunk) => { serverOutput += chunk.toString(); });
+    return childProcess;
+  };
+  let child = startServer();
   t.after(async () => {
     child.kill("SIGTERM");
     await Promise.race([
@@ -449,7 +624,30 @@ test("first-run setup creates only one administrator", async (t) => {
 
   const initialStatus = await fetch(`${baseUrl}/api/auth/status`);
   assert.deepEqual(await initialStatus.json(), { initialSetupRequired: true });
-  const input = JSON.stringify({ name: "Premier Admin", email: "first@example.test", password: "First Admin Password 2026!" });
+  const register = (body, origin = baseUrl) => fetch(`${baseUrl}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: origin },
+    body: JSON.stringify(body),
+  });
+  const registrationInput = {
+    name: "Nouveau Client",
+    email: "  Client@Example.test  ",
+    password: "User1234567!",
+    role: "Administrateur",
+    active: false,
+  };
+  const beforeSetup = await register(registrationInput);
+  assert.equal(beforeSetup.status, 409);
+  for (const password of ["1234567", "1234567890123"]) {
+    const rejected = await fetch(`${baseUrl}/api/auth/setup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: baseUrl },
+      body: JSON.stringify({ name: "Premier Admin", email: "first@example.test", password }),
+    });
+    assert.equal(rejected.status, 400);
+    assert.match((await rejected.json()).error, /entre 8 et 12 caractères/);
+  }
+  const input = JSON.stringify({ name: "Premier Admin", email: "first@example.test", password: "Admin123" });
   const createFirstAdmin = () => fetch(`${baseUrl}/api/auth/setup`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: baseUrl },
@@ -465,6 +663,127 @@ test("first-run setup creates only one administrator", async (t) => {
   assert.equal(db.prepare("SELECT role FROM users LIMIT 1").get().role, "Administrateur");
   assert.equal(db.prepare("SELECT COUNT(*) AS count FROM sessions").get().count, 1);
   db.close();
+
+  const invalidOrigin = await register(registrationInput, "https://other.example.test");
+  assert.equal(invalidOrigin.status, 403);
+  for (const invalid of [
+    { name: "" },
+    { name: "x".repeat(81) },
+    { email: "invalid" },
+    { password: "1234567" },
+    { password: "x".repeat(13) },
+  ]) {
+    const response = await register({
+      ...registrationInput,
+      email: `invalid-${Object.keys(invalid)[0]}-${Object.values(invalid)[0].length}@example.test`,
+      ...invalid,
+    });
+    assert.equal(response.status, 400);
+  }
+
+  const registration = await register(registrationInput);
+  assert.equal(registration.status, 201);
+  const session = await registration.json();
+  assert.deepEqual(session.user, {
+    id: 2, name: "Nouveau Client", email: "client@example.test", role: "Utilisateur",
+  });
+  assert.equal(typeof session.csrfToken, "string");
+  assert.match(registration.headers.getSetCookie().join(";"), /HttpOnly/);
+  const cookie = registration.headers.getSetCookie().map((value) => value.split(";")[0]).join("; ");
+  const workspace = await fetch(`${baseUrl}/api/bootstrap`, { headers: { Cookie: cookie } });
+  assert.equal(workspace.status, 200);
+  assert.equal((await workspace.json()).user.role, "Utilisateur");
+  const deniedUsers = await fetch(`${baseUrl}/api/users`, { headers: { Cookie: cookie } });
+  assert.equal(deniedUsers.status, 403);
+  const deniedRoom = await fetch(`${baseUrl}/api/rooms`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json", Origin: baseUrl,
+      Cookie: cookie, "X-CSRF-Token": session.csrfToken,
+    },
+    body: "{}",
+  });
+  assert.equal(deniedRoom.status, 403);
+  const duplicate = await register({ ...registrationInput, email: "CLIENT@example.test" });
+  assert.equal(duplicate.status, 409);
+  const duplicateAdmin = await register({ ...registrationInput, email: "first@example.test" });
+  assert.equal(duplicateAdmin.status, 409);
+  const logout = await fetch(`${baseUrl}/api/auth/logout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json", Origin: baseUrl,
+      Cookie: cookie, "X-CSRF-Token": session.csrfToken,
+    },
+    body: "{}",
+  });
+  assert.equal(logout.status, 200);
+  assert.match(logout.headers.getSetCookie().join(";"), /Max-Age=0/);
+  const loggedOut = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: cookie } });
+  assert.equal(loggedOut.status, 401);
+  const login = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: baseUrl },
+    body: JSON.stringify({ email: "client@example.test", password: registrationInput.password }),
+  });
+  assert.equal(login.status, 200);
+  assert.equal((await login.json()).user.role, "Utilisateur");
+
+  const registeredDb = new DatabaseSync(join(dataDirectory, "roomflow.sqlite"));
+  const account = registeredDb.prepare("SELECT * FROM users WHERE email='client@example.test'").get();
+  assert.equal(account.role, "Utilisateur");
+  assert.equal(account.active, 1);
+  assert.notEqual(account.password_hash, registrationInput.password);
+  assert.equal(registeredDb.prepare("SELECT COUNT(*) AS count FROM users").get().count, 2);
+  assert.equal(registeredDb.prepare("SELECT COUNT(*) AS count FROM audit_log WHERE action='Inscription'").get().count, 1);
+  registeredDb.close();
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const limited = await register({ ...registrationInput, email: "limited@example.test", password: "short" });
+    assert.equal(limited.status, attempt < 5 ? 400 : 429);
+  }
+
+  const stopped = new Promise((resolveExit) => child.once("exit", resolveExit));
+  child.kill("SIGTERM");
+  await stopped;
+  child = startServer();
+  ready = false;
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    if (child.exitCode !== null) break;
+    try {
+      const response = await fetch(`${baseUrl}/api/auth/status`);
+      if (response.ok) {
+        assert.deepEqual(await response.json(), { initialSetupRequired: false });
+        ready = true;
+        break;
+      }
+    } catch {
+      // The restarted server might not be listening yet.
+    }
+    await delay(100);
+  }
+  assert.ok(ready, `Server did not restart. ${serverOutput}`);
+  const reconnect = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: baseUrl },
+    body: JSON.stringify({ email: "client@example.test", password: registrationInput.password }),
+  });
+  assert.equal(reconnect.status, 200);
+  const reconnectedSession = await reconnect.json();
+  assert.deepEqual(reconnectedSession.user, session.user);
+  const reconnectedCookie = reconnect.headers.getSetCookie().map((value) => value.split(";")[0]).join("; ");
+  const logoutAfterRestart = await fetch(`${baseUrl}/api/auth/logout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json", Origin: baseUrl,
+      Cookie: reconnectedCookie, "X-CSRF-Token": reconnectedSession.csrfToken,
+    },
+    body: "{}",
+  });
+  assert.equal(logoutAfterRestart.status, 200);
+  const persistedDb = new DatabaseSync(join(dataDirectory, "roomflow.sqlite"));
+  const persistedUser = persistedDb.prepare("SELECT id, name, email, role FROM users WHERE id=?").get(session.user.id);
+  assert.deepEqual({ ...persistedUser }, session.user);
+  persistedDb.close();
 });
 
 test("existing room image choices migrate to photo galleries", async (t) => {
@@ -488,6 +807,8 @@ test("existing room image choices migrate to photo galleries", async (t) => {
     );
     INSERT INTO rooms (name, code, type, capacity, equipment, location, active, open_time, close_time, max_duration, image_key)
     VALUES ('Ancienne salle', 'OLD-01', 'Formation', 18, '', 'Bâtiment A', 1, '08:00', '20:00', 4, 'training');
+    INSERT INTO rooms (name, code, type, capacity, open_time, close_time, max_duration)
+    VALUES ('Ancien type', 'OLD-02', 'Veillée mortuaire', 20, '08:00', '20:00', 4);
   `);
   legacyDb.close();
 
@@ -529,5 +850,6 @@ test("existing room image choices migrate to photo galleries", async (t) => {
   const gallery = migratedDb.prepare("SELECT image_key, image_keys FROM rooms WHERE code='OLD-01'").get();
   assert.equal(gallery.image_key, "classroom");
   assert.deepEqual(JSON.parse(gallery.image_keys), ["classroom", "auditorium"]);
+  assert.equal(migratedDb.prepare("SELECT type FROM rooms WHERE code='OLD-02'").get().type, "Salle mortuaire");
   migratedDb.close();
 });
