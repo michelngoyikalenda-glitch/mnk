@@ -127,8 +127,8 @@ function showInitialSetup() {
 
 function showLoginForm() {
   authMode = "login";
-  document.getElementById("authTitle").textContent = "Connexion";
-  document.getElementById("authDescription").textContent = "Connectez-vous pour accéder à votre espace de réservation.";
+  document.getElementById("authTitle").textContent = "Heureux de vous revoir";
+  document.getElementById("authDescription").textContent = "Connectez-vous et retrouvez en un instant vos réservations, vos salles favorites et vos prochains rendez-vous.";
   document.getElementById("loginForm").classList.remove("hidden");
   document.getElementById("setupForm").classList.add("hidden");
   document.getElementById("setupForm").reset();
@@ -136,27 +136,27 @@ function showLoginForm() {
   document.getElementById("authActions").classList.remove("hidden");
   document.getElementById("showLoginButton").setAttribute("aria-pressed", "true");
   document.getElementById("showRegisterButton").setAttribute("aria-pressed", "false");
-  document.getElementById("authHelp").textContent = "Pas encore de compte ? Créez un compte utilisateur pour réserver une salle.";
+  document.getElementById("authHelp").textContent = "Pas encore membre ? Créez votre compte gratuitement en moins d’une minute et commencez à réserver dès aujourd’hui.";
 }
 
 function showAccountForm(initialSetup = false) {
   authMode = initialSetup ? "setup" : "register";
-  document.getElementById("authTitle").textContent = initialSetup ? "Créer le premier compte" : "Créer un compte";
+  document.getElementById("authTitle").textContent = initialSetup ? "Lancez votre espace RoomFlow" : "Rejoignez RoomFlow";
   document.getElementById("authDescription").textContent = initialSetup
-    ? "Configurez l’application en créant votre compte administrateur. Cette étape ne peut être effectuée qu’une seule fois."
-    : "Inscrivez-vous pour consulter les disponibilités et réserver une salle.";
+    ? "Créez le compte administrateur et prenez les commandes : ajoutez vos salles, invitez votre équipe et organisez chaque espace en toute simplicité. Cette étape n’est effectuée qu’une seule fois."
+    : "Votre prochaine réunion mérite la bonne salle. Créez votre compte une seule fois, puis connectez-vous quand vous le souhaitez pour explorer les salles et réserver en toute sérénité.";
   document.getElementById("loginForm").classList.add("hidden");
   document.getElementById("loginPassword").value = "";
   document.getElementById("setupForm").classList.remove("hidden");
   document.getElementById("setupError").classList.add("hidden");
   document.getElementById("accountPasswordLabel").textContent = initialSetup ? "Mot de passe administrateur" : "Mot de passe";
-  document.getElementById("setupButton").textContent = initialSetup ? "Créer mon compte administrateur" : "Créer mon compte";
+  document.getElementById("setupButton").textContent = initialSetup ? "Créer mon compte administrateur" : "Créer mon compte et commencer";
   document.getElementById("authActions").classList.toggle("hidden", initialSetup);
   document.getElementById("showLoginButton").setAttribute("aria-pressed", "false");
   document.getElementById("showRegisterButton").setAttribute("aria-pressed", "true");
   document.getElementById("authHelp").textContent = initialSetup
     ? "Le premier compte reçoit le rôle Administrateur. Après sa création, cette configuration est définitivement désactivée."
-    : "Votre compte reçoit le rôle Utilisateur. Les accès de gestion sont attribués uniquement par l’administrateur.";
+    : "Gratuit, rapide et sécurisé : votre mot de passe est chiffré et vos informations restent confidentielles. Déjà inscrit ? Cliquez sur « Se connecter ».";
 }
 
 async function establishSession() {

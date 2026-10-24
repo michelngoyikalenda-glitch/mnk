@@ -98,7 +98,7 @@ test("session, CSRF, permissions, reservations and password rotation", async (t)
   const page = await fetch(baseUrl);
   assert.equal(page.status, 200);
   const pageHtml = await page.text();
-  assert.match(pageHtml, /Espace sécurisé/);
+  assert.match(pageHtml, /Bienvenue sur RoomFlow/);
   for (const id of ["setupPassword", "setupConfirmPassword", "newUserPassword", "newPassword", "confirmPassword"]) {
     assert.match(pageHtml, new RegExp(`id="${id}"[^>]*minlength="8" maxlength="12"`));
   }
